@@ -11,6 +11,7 @@ import java.io.InputStreamReader
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.regex.Pattern
+import kotlin.concurrent.thread
 
 class SessionTracker(
     private val context: Context,
@@ -88,9 +89,12 @@ class SessionTracker(
     private fun readSessionsFromDump(): Set<Int> {
         return runCatching {
             val process = Runtime.getRuntime().exec(arrayOf("dumpsys", "media.audio_flinger"))
-            val output = process.inputStream.bufferedReader().use(BufferedReader::readText)
+            val output = process.inputStream.bufferedReader().use { it.readText() }
             process.waitFor()
-            SESSION_PATTERN.findAll(output).map { it.groupValues[1].toInt() }.toSet()
+            Regex("session\\s+(\\d+)", RegexOption.IGNORE_CASE)
+                .findAll(output)
+                .map { it.groupValues[1].toInt() }
+                .toSet()
         }.getOrElse {
             Log.w(TAG, "Enhanced session detection failed", it)
             emptySet()

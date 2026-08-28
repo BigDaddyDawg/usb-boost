@@ -48,10 +48,10 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.3
-          name: USB Boost v1.0.3
+          tag_name: v1.1.0
+          name: USB Boost v1.1.0
           body: |
-            One-tap **Set up & start** — no PC or ADB command needed.
-            Auto-enables boost, car/USB mode, and legacy fallback for Spotify etc.
+            Works out of the box — open the app, allow notifications, done.
+            Boost starts automatically. Plug into the car and drag the slider.
           files: app/build/outputs/apk/release/app-release.apk
           make_latest: true

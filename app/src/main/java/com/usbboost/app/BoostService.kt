@@ -43,14 +43,7 @@ class BoostService : Service() {
 
         val settings = prefs.load()
         startForeground(NOTIFICATION_ID, buildNotification(settings, outputState))
-
-        if (intent?.action == ACTION_RELOAD) {
-            reloadFromUi()
-            return START_STICKY
-        }
-
         sessionTracker.start(settings)
-        sessionTracker.refresh(settings)
         refreshOutput()
         return START_STICKY
     }

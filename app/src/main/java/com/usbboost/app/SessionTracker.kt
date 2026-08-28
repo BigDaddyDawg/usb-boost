@@ -30,6 +30,7 @@ class SessionTracker(
     }
 
     fun start(settings: BoostSettings) {
+        runCatching { audioManager.unregisterAudioPlaybackCallback(playbackCallback) }
         audioManager.registerAudioPlaybackCallback(playbackCallback, mainHandler)
         schedulePoll()
         refresh(settings)

@@ -8,11 +8,10 @@ data class BoostSettings(
     val autoCarMode: Boolean = true,
     val boostPercent: Int = 65,
     val bassPercent: Int = 55,
-    val legacyMode: Boolean = false,
+    val legacyMode: Boolean = true,
     val enhancedDetection: Boolean = true,
     val startOnBoot: Boolean = true
 ) {
-    /** Preamp gain in decibels (0–12 dB at 100%). */
     fun boostDecibels(): Float = (boostPercent / 100f) * MAX_BOOST_DB
 
     companion object {
@@ -20,7 +19,7 @@ data class BoostSettings(
     }
 }
 
-class BoostPrefs(context: Context) {
+class BoostPrefs(private val context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -29,7 +28,7 @@ class BoostPrefs(context: Context) {
         autoCarMode = prefs.getBoolean(KEY_AUTO_CAR, true),
         boostPercent = prefs.getInt(KEY_BOOST, 65).coerceIn(0, 100),
         bassPercent = prefs.getInt(KEY_BASS, 55).coerceIn(0, 100),
-        legacyMode = prefs.getBoolean(KEY_LEGACY, false),
+        legacyMode = prefs.getBoolean(KEY_LEGACY, true),
         enhancedDetection = prefs.getBoolean(KEY_ENHANCED, true),
         startOnBoot = prefs.getBoolean(KEY_BOOT, true)
     )
@@ -46,6 +45,22 @@ class BoostPrefs(context: Context) {
             .apply()
     }
 
+    fun applyOutOfBoxDefaults() {
+        save(
+            load().copy(
+                legacyMode = true,
+                startOnBoot = true,
+                enhancedDetection = true
+            )
+        )
+    }
+
+    fun batteryPromptShown(): Boolean = prefs.getBoolean(KEY_BATTERY_PROMPT, false)
+
+    fun markBatteryPromptShown() {
+        prefs.edit().putBoolean(KEY_BATTERY_PROMPT, true).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "usb_boost_prefs"
         private const val KEY_ENABLED = "enabled"
@@ -55,5 +70,6 @@ class BoostPrefs(context: Context) {
         private const val KEY_LEGACY = "legacy"
         private const val KEY_ENHANCED = "enhanced"
         private const val KEY_BOOT = "boot"
+        private const val KEY_BATTERY_PROMPT = "battery_prompt"
     }
 }

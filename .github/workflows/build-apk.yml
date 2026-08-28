@@ -33,9 +33,11 @@ jobs:
       - name: Build release APK
         run: ./gradlew assembleRelease --no-daemon
 
-      - name: Rename APK for install
+      - name: Verify APK is signed
         run: |
-          cp app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/app-release.apk
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -f "$APK" || (echo "Missing $APK" && exit 1)
+          apksigner verify --verbose "$APK"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -46,11 +48,10 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          name: USB Boost v1.0.0
+          tag_name: v1.0.1
+          name: USB Boost v1.0.1
           body: |
-            Sideload this APK on your Pixel 8.
-            Open USB Boost, tap Start, play music with the car plugged in via USB.
+            **Fix:** APK is now signed — installs on Pixel without "App not installed".
+            Sideload app-release.apk, open USB Boost, tap Start, play music with USB plugged in.
           files: app/build/outputs/apk/release/app-release.apk
-          overwrite_files: true
           make_latest: true

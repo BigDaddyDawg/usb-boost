@@ -11,13 +11,15 @@ android {
         applicationId = "com.usbboost.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            // Sideload-friendly: sign release builds so the APK installs on the phone.
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -20,7 +20,7 @@ USB Boost does the same:
 ## Install on your phone
 
 1. Open **[Releases](https://github.com/BigDaddyDawg/usb-boost/releases)** on your Pixel
-2. Download the latest **`app-release.apk`**
+2. Download the latest **`app-release.apk`** (v1.0.1+ — signed builds only)
 3. Allow install from browser / Files when prompted
 4. Open **USB Boost** → tap **Start**
 5. Play music in your usual app (Spotify, etc.) with the car plugged in via USB

@@ -37,7 +37,7 @@ jobs:
         run: |
           APK=app/build/outputs/apk/release/app-release.apk
           test -f "$APK" || (echo "Missing $APK" && exit 1)
-          apksigner verify --verbose "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

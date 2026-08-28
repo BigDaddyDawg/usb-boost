@@ -37,6 +37,9 @@ class BoostService : Service() {
         intent?.getIntExtra(EXTRA_SESSION_ID, -1)?.takeIf { it >= 0 }?.let {
             sessionTracker.trackSession(it)
         }
+        intent?.getIntExtra(EXTRA_UNTRACK_SESSION, -1)?.takeIf { it >= 0 }?.let {
+            sessionTracker.untrackSession(it)
+        }
 
         val settings = prefs.load()
         startForeground(NOTIFICATION_ID, buildNotification(settings, outputState))
@@ -79,7 +82,9 @@ class BoostService : Service() {
 
     private fun applyToSessions(sessions: Set<Int>) {
         val settings = prefs.load()
-        val carActive = outputState.carLikely || outputState.kind == OutputKind.USB
+        val carActive = outputState.carLikely ||
+            outputState.kind == OutputKind.USB ||
+            OutputMonitor.usbCableConnected(this)
 
         val stale = chains.keys.filter { it !in sessions }
         stale.forEach { id ->
@@ -130,6 +135,7 @@ class BoostService : Service() {
     companion object {
         const val ACTION_RELOAD = "com.usbboost.app.RELOAD"
         const val EXTRA_SESSION_ID = "session_id"
+        const val EXTRA_UNTRACK_SESSION = "untrack_session"
         private const val CHANNEL_ID = "usb_boost_active"
         private const val NOTIFICATION_ID = 1001
 

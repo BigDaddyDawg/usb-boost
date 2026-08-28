@@ -15,7 +15,9 @@ class AudioSessionReceiver : BroadcastReceiver() {
                 BoostService.start(context, sessionId)
             }
             AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION -> {
-                BoostService.start(context)
+                val closeIntent = Intent(context, BoostService::class.java)
+                    .putExtra(BoostService.EXTRA_UNTRACK_SESSION, sessionId)
+                context.startForegroundService(closeIntent)
             }
         }
     }

@@ -6,12 +6,8 @@ import android.media.AudioPlaybackConfiguration
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
-import java.util.regex.Pattern
-import kotlin.concurrent.thread
 
 class SessionTracker(
     private val context: Context,
@@ -22,6 +18,7 @@ class SessionTracker(
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
     private var legacyAttached = false
+    private var pollRunnable: Runnable? = null
 
     private val playbackCallback = object : AudioManager.AudioPlaybackCallback() {
         override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>) {
@@ -34,10 +31,13 @@ class SessionTracker(
 
     fun start(settings: BoostSettings) {
         audioManager.registerAudioPlaybackCallback(playbackCallback, mainHandler)
+        schedulePoll()
         refresh(settings)
     }
 
     fun stop() {
+        pollRunnable?.let { mainHandler.removeCallbacks(it) }
+        pollRunnable = null
         audioManager.unregisterAudioPlaybackCallback(playbackCallback)
         knownSessions.clear()
         legacyAttached = false
@@ -55,8 +55,14 @@ class SessionTracker(
                 discovered.add(0)
             }
             mainHandler.post {
-                knownSessions.clear()
-                knownSessions.addAll(discovered)
+                if (discovered.isNotEmpty()) {
+                    knownSessions.addAll(discovered)
+                }
+                if (settings.legacyMode) {
+                    knownSessions.add(0)
+                } else {
+                    knownSessions.remove(0)
+                }
                 legacyAttached = settings.legacyMode
                 notifyChange()
             }
@@ -91,8 +97,7 @@ class SessionTracker(
             val process = Runtime.getRuntime().exec(arrayOf("dumpsys", "media.audio_flinger"))
             val output = process.inputStream.bufferedReader().use { it.readText() }
             process.waitFor()
-            Regex("session\\s+(\\d+)", RegexOption.IGNORE_CASE)
-                .findAll(output)
+            SESSION_REGEX.findAll(output)
                 .map { it.groupValues[1].toInt() }
                 .toSet()
         }.getOrElse {
@@ -117,12 +122,25 @@ class SessionTracker(
         if (changed) notifyChange()
     }
 
+    private fun schedulePoll() {
+        pollRunnable?.let { mainHandler.removeCallbacks(it) }
+        val runnable = object : Runnable {
+            override fun run() {
+                refresh(BoostPrefs(context).load())
+                mainHandler.postDelayed(this, POLL_INTERVAL_MS)
+            }
+        }
+        pollRunnable = runnable
+        mainHandler.postDelayed(runnable, POLL_INTERVAL_MS)
+    }
+
     private fun notifyChange() {
         onSessionsChanged(activeSessions())
     }
 
     companion object {
         private const val TAG = "SessionTracker"
-        private val SESSION_PATTERN = Pattern.compile("session\\s+(\\d+)", Pattern.CASE_INSENSITIVE)
+        private const val POLL_INTERVAL_MS = 2500L
+        private val SESSION_REGEX = Regex("session\\s+(\\d+)", RegexOption.IGNORE_CASE)
     }
 }

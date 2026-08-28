@@ -2,9 +2,9 @@ package com.usbboost.app
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.hardware.usb.UsbManager
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
-import android.os.Build
 
 enum class OutputKind {
     PHONE,
@@ -20,15 +20,25 @@ data class OutputState(
 )
 
 object OutputMonitor {
+    fun usbCableConnected(context: Context): Boolean {
+        val usbManager = context.getSystemService(UsbManager::class.java)
+        return usbManager.deviceList.isNotEmpty()
+    }
+
     fun current(context: Context): OutputState {
         val audioManager = context.getSystemService(AudioManager::class.java)
         val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+        val usbCable = usbCableConnected(context)
 
-        val usb = devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_USB_DEVICE || it.type == AudioDeviceInfo.TYPE_USB_HEADSET }
-        if (usb != null) {
+        val usb = devices.firstOrNull {
+            it.type == AudioDeviceInfo.TYPE_USB_DEVICE ||
+                it.type == AudioDeviceInfo.TYPE_USB_HEADSET ||
+                it.type == AudioDeviceInfo.TYPE_USB_ACCESSORY
+        }
+        if (usb != null || usbCable) {
             return OutputState(
                 kind = OutputKind.USB,
-                label = usb.productName?.toString() ?: "USB audio",
+                label = usb?.productName?.toString() ?: "USB / Android Auto",
                 carLikely = true
             )
         }

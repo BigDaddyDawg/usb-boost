@@ -1,13 +1,9 @@
 package com.usbboost.app
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
-import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -16,12 +12,12 @@ import com.usbboost.app.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: BoostPrefs
+    private var askedNotifications = false
 
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) {
-        startBoosting()
-        maybeAskBatteryExemption()
+        applyEnabledState()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,14 +27,14 @@ class MainActivity : AppCompatActivity() {
         prefs = BoostPrefs(this)
         prefs.applyOutOfBoxDefaults()
         bindUi()
-        startBoosting()
-        maybeAskBatteryExemption()
+        requestNotificationsIfNeeded()
+        applyEnabledState()
     }
 
     override fun onResume() {
         super.onResume()
         refreshStatus()
-        if (prefs.load().enabled) startBoosting()
+        syncToggle()
     }
 
     private fun bindUi() {
@@ -48,22 +44,47 @@ class MainActivity : AppCompatActivity() {
         binding.sliderBoost.value = settings.boostPercent.toFloat()
         binding.sliderBass.value = settings.bassPercent.toFloat()
         updateValueLabels(settings)
+        syncToggle()
 
-        binding.switchEnabled.setOnCheckedChangeListener { _, _ -> persistAndApply() }
+        binding.buttonOn.setOnClickListener { setBoostEnabled(true) }
+        binding.buttonOff.setOnClickListener { setBoostEnabled(false) }
+
+        binding.switchEnabled.setOnCheckedChangeListener { _, isChecked ->
+            setBoostEnabled(isChecked)
+        }
         binding.switchAutoCar.setOnCheckedChangeListener { _, _ -> persistAndApply() }
 
         binding.sliderBoost.addOnChangeListener { _, _, fromUser ->
             if (!fromUser) return@addOnChangeListener
             val updated = currentSettings()
             updateValueLabels(updated)
-            saveAndReloadService(updated)
+            prefs.save(updated)
+            if (updated.enabled) BoostService.startSafely(this)
+            refreshStatus()
         }
         binding.sliderBass.addOnChangeListener { _, _, fromUser ->
             if (!fromUser) return@addOnChangeListener
             val updated = currentSettings()
             updateValueLabels(updated)
-            saveAndReloadService(updated)
+            prefs.save(updated)
+            if (updated.enabled) BoostService.startSafely(this)
+            refreshStatus()
         }
+    }
+
+    private fun setBoostEnabled(enabled: Boolean) {
+        binding.switchEnabled.setOnCheckedChangeListener(null)
+        binding.switchEnabled.isChecked = enabled
+        binding.switchEnabled.setOnCheckedChangeListener { _, isChecked -> setBoostEnabled(isChecked) }
+        persistAndApply()
+        syncToggle()
+    }
+
+    private fun syncToggle() {
+        val on = prefs.load().enabled
+        binding.buttonOn.isEnabled = !on
+        binding.buttonOff.isEnabled = on
+        binding.textPowerStatus.text = getString(if (on) R.string.boost_is_on else R.string.boost_is_off)
     }
 
     private fun currentSettings(): BoostSettings {
@@ -90,56 +111,39 @@ class MainActivity : AppCompatActivity() {
     private fun persistAndApply() {
         val settings = currentSettings()
         prefs.save(settings)
-        if (settings.enabled) startBoosting() else BoostService.stop(this)
+        applyEnabledState()
         refreshStatus()
+        syncToggle()
     }
 
-    private fun saveAndReloadService(settings: BoostSettings) {
-        prefs.save(settings)
-        if (settings.enabled) reloadService()
-        refreshStatus()
+    private fun applyEnabledState() {
+        if (prefs.load().enabled) {
+            BoostService.startSafely(this)
+        } else {
+            BoostService.stop(this)
+        }
     }
 
-    private fun reloadService() {
-        startForegroundService(
-            Intent(this, BoostService::class.java).setAction(BoostService.ACTION_RELOAD)
-        )
-    }
-
-    private fun startBoosting() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+    private fun requestNotificationsIfNeeded() {
+        if (askedNotifications) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
         ) {
-            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             return
         }
-        reloadService()
-        refreshStatus()
-    }
-
-    private fun maybeAskBatteryExemption() {
-        if (prefs.batteryPromptShown()) return
-        val power = getSystemService(PowerManager::class.java)
-        if (power.isIgnoringBatteryOptimizations(packageName)) {
-            prefs.markBatteryPromptShown()
-            return
-        }
-        prefs.markBatteryPromptShown()
-        runCatching {
-            startActivity(
-                Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                    .setData(Uri.parse("package:$packageName"))
-            )
-        }
+        askedNotifications = true
+        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun refreshStatus() {
         val output = OutputMonitor.current(this)
+        val on = prefs.load().enabled
         binding.textOutput.text = getString(R.string.output_label, output.label)
-        binding.textHint.text = when (output.kind) {
-            OutputKind.USB -> getString(R.string.hint_usb)
-            OutputKind.BLUETOOTH -> getString(R.string.hint_bluetooth)
+        binding.textHint.text = when {
+            !on -> getString(R.string.hint_off)
+            output.kind == OutputKind.USB -> getString(R.string.hint_usb)
+            output.kind == OutputKind.BLUETOOTH -> getString(R.string.hint_bluetooth)
             else -> getString(R.string.hint_phone)
         }
     }

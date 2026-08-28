@@ -1,8 +1,12 @@
 <resources>
     <string name="app_name">USB Boost</string>
-    <string name="app_tagline">Open this app once, plug into the car, play music. Drag the slider until it sounds right.</string>
-    <string name="notification_channel">USB Boost active</string>
+    <string name="app_tagline">Turn boost on, plug into the car, play music. Drag the slider until it sounds right.</string>
+    <string name="notification_channel">USB Boost</string>
     <string name="enable_boost">Boost on</string>
+    <string name="turn_on">Turn on</string>
+    <string name="turn_off">Turn off</string>
+    <string name="boost_is_on">Boost is on</string>
+    <string name="boost_is_off">Boost is off</string>
     <string name="auto_car_mode">Only in the car / USB</string>
     <string name="boost_level_label">Boost level</string>
     <string name="boost_level_hint">Drag while music plays — louder in the car</string>
@@ -10,7 +14,11 @@
     <string name="bass_label">Bass lift</string>
     <string name="percent_value">%1$d%%</string>
     <string name="output_label">Output: %1$s</string>
+    <string name="status_off">Boost off</string>
+    <string name="status_waiting">Waiting for car / USB</string>
+    <string name="status_on">Boost +%1$.1f dB · %2$s</string>
+    <string name="hint_off">Boost is off. Tap Turn on when you want it.</string>
     <string name="hint_usb">USB / Android Auto — boost is on.</string>
     <string name="hint_bluetooth">Bluetooth — boost is on if this is the car.</string>
-    <string name="hint_phone">On the phone speaker — plug into the car to boost, or turn off “Only in the car / USB”.</string>
+    <string name="hint_phone">On the phone speaker — plug into the car, or turn off “Only in the car / USB”.</string>
 </resources>

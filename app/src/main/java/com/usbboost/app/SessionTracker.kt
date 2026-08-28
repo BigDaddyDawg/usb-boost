@@ -30,7 +30,7 @@ class SessionTracker(
     }
 
     fun start(settings: BoostSettings) {
-        runCatching { audioManager.unregisterAudioPlaybackCallback(playbackCallback) }
+        audioManager.unregisterAudioPlaybackCallback(playbackCallback)
         audioManager.registerAudioPlaybackCallback(playbackCallback, mainHandler)
         schedulePoll()
         refresh(settings)
@@ -39,7 +39,7 @@ class SessionTracker(
     fun stop() {
         pollRunnable?.let { mainHandler.removeCallbacks(it) }
         pollRunnable = null
-        audioManager.unregisterAudioPlaybackCallback(playbackCallback)
+        runCatching { audioManager.unregisterAudioPlaybackCallback(playbackCallback) }
         knownSessions.clear()
         legacyAttached = false
         notifyChange()

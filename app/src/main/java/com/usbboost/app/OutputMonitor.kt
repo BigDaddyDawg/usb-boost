@@ -21,8 +21,9 @@ data class OutputState(
 
 object OutputMonitor {
     fun usbCableConnected(context: Context): Boolean {
-        val usbManager = context.getSystemService(UsbManager::class.java)
-        return usbManager.deviceList.isNotEmpty()
+        return runCatching {
+            context.getSystemService(UsbManager::class.java)?.deviceList?.isNotEmpty() == true
+        }.getOrDefault(false)
     }
 
     fun current(context: Context): OutputState {

@@ -30,6 +30,48 @@
                 android:padding="16dp">
 
                 <TextView
+                    android:id="@+id/textPowerStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceHeadlineSmall" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonOn"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/turn_on" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonOff"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/turn_off" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
                     android:id="@+id/textOutput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -94,7 +136,8 @@
             android:id="@+id/switchEnabled"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/enable_boost" />
+            android:text="@string/enable_boost"
+            android:visibility="gone" />
 
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/switchAutoCar"

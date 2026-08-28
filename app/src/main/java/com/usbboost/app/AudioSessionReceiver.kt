@@ -12,12 +12,10 @@ class AudioSessionReceiver : BroadcastReceiver() {
 
         when (intent.action) {
             AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION -> {
-                BoostService.start(context, sessionId)
+                BoostService.notifyIfRunning(context, sessionId = sessionId)
             }
             AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION -> {
-                val closeIntent = Intent(context, BoostService::class.java)
-                    .putExtra(BoostService.EXTRA_UNTRACK_SESSION, sessionId)
-                context.startForegroundService(closeIntent)
+                BoostService.notifyIfRunning(context, untrack = sessionId)
             }
         }
     }

@@ -48,10 +48,10 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.0
-          name: USB Boost v1.1.0
+          tag_name: v1.1.1
+          name: USB Boost v1.1.1
           body: |
-            Works out of the box — open the app, allow notifications, done.
-            Boost starts automatically. Plug into the car and drag the slider.
+            Crash fix: no longer starts a background service when other apps play music.
+            Clear **Turn on** / **Turn off** buttons.
           files: app/build/outputs/apk/release/app-release.apk
           make_latest: true

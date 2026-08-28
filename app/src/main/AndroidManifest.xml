@@ -29,7 +29,8 @@
         <service
             android:name=".BoostService"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+            android:foregroundServiceType="mediaPlayback"
+            android:stopWithTask="false" />
 
         <receiver
             android:name=".AudioSessionReceiver"

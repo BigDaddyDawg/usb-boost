@@ -9,7 +9,7 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         val prefs = BoostPrefs(context).load()
         if (prefs.enabled && prefs.startOnBoot) {
-            BoostService.start(context)
+            BoostService.startSafely(context)
         }
     }
 }

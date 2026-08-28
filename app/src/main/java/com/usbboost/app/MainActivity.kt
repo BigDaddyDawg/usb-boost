@@ -10,15 +10,28 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.usbboost.app.databinding.ActivityMainBinding
+import rikka.shizuku.Shizuku
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: BoostPrefs
+    private var pendingOneTapAfterNotification = false
+    private var pendingOneTapAfterShizuku = false
+
+    private val shizukuListener = Shizuku.OnRequestPermissionResultListener { _, grantResult ->
+        if (grantResult == PackageManager.PERMISSION_GRANTED && pendingOneTapAfterShizuku) {
+            pendingOneTapAfterShizuku = false
+            runOneTapSetup(showToast = true)
+        }
+    }
 
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
-        if (granted) startBoosting(showToast = true)
+        if (granted && pendingOneTapAfterNotification) {
+            pendingOneTapAfterNotification = false
+            runOneTapSetup(showToast = true)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,7 +39,13 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         prefs = BoostPrefs(this)
+        Shizuku.addOnRequestPermissionResultListener(shizukuListener)
         bindUi()
+    }
+
+    override fun onDestroy() {
+        Shizuku.removeOnRequestPermissionResultListener(shizukuListener)
+        super.onDestroy()
     }
 
     override fun onResume() {
@@ -44,6 +63,8 @@ class MainActivity : AppCompatActivity() {
         binding.sliderBoost.value = settings.boostPercent.toFloat()
         binding.sliderBass.value = settings.bassPercent.toFloat()
         updateValueLabels(settings)
+
+        binding.buttonOneTapSetup.setOnClickListener { beginOneTapSetup() }
 
         binding.switchEnabled.setOnCheckedChangeListener { _, _ -> persistAndApply() }
         binding.switchAutoCar.setOnCheckedChangeListener { _, _ -> persistAndApply() }
@@ -70,12 +91,53 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.service_stopped, Toast.LENGTH_SHORT).show()
             refreshStatus()
         }
-        binding.buttonCopyAdb.setOnClickListener {
-            val cmd = "adb shell pm grant $packageName android.permission.DUMP"
-            val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
-            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("adb", cmd))
-            Toast.makeText(this, R.string.adb_copied, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun beginOneTapSetup() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingOneTapAfterNotification = true
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            return
         }
+        runOneTapSetup(showToast = true)
+    }
+
+    private fun runOneTapSetup(showToast: Boolean) {
+        if (EnhancedPermissionHelper.needsShizukuPermission()) {
+            pendingOneTapAfterShizuku = true
+            EnhancedPermissionHelper.requestShizukuPermission()
+            if (showToast) {
+                Toast.makeText(this, R.string.setup_shizuku_wait, Toast.LENGTH_LONG).show()
+            }
+            return
+        }
+
+        val setupSettings = SetupHelper.buildSettingsForSetup(this, currentSettings())
+        prefs.save(setupSettings)
+        applySettingsToUi(setupSettings)
+        reloadService()
+
+        if (showToast) {
+            val message = when {
+                OutputMonitor.hasDumpPermission(this) -> R.string.setup_done_enhanced
+                setupSettings.legacyMode -> R.string.setup_done_legacy
+                else -> R.string.setup_done
+            }
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        }
+        refreshStatus()
+    }
+
+    private fun applySettingsToUi(settings: BoostSettings) {
+        binding.switchEnabled.isChecked = settings.enabled
+        binding.switchAutoCar.isChecked = settings.autoCarMode
+        binding.switchLegacy.isChecked = settings.legacyMode
+        binding.switchEnhanced.isChecked = settings.enhancedDetection
+        binding.switchBoot.isChecked = settings.startOnBoot
+        updateValueLabels(settings)
     }
 
     private fun currentSettings(): BoostSettings = BoostSettings(

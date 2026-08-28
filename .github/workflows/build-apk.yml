@@ -48,10 +48,10 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.2
-          name: USB Boost v1.0.2
+          tag_name: v1.0.3
+          name: USB Boost v1.0.3
           body: |
-            Prominent boost level slider with live dB readout (0–12 dB).
-            Drag while music plays to tune car volume.
+            One-tap **Set up & start** — no PC or ADB command needed.
+            Auto-enables boost, car/USB mode, and legacy fallback for Spotify etc.
           files: app/build/outputs/apk/release/app-release.apk
           make_latest: true

@@ -17,8 +17,13 @@
     <string name="copy_adb">Copy ADB setup command</string>
     <string name="percent_value">%1$d%%</string>
     <string name="output_label">Output: %1$s</string>
-    <string name="dump_granted">Enhanced detection: ready</string>
-    <string name="dump_missing">Enhanced detection: needs one-time ADB grant (tap below)</string>
+    <string name="one_tap_setup">Set up &amp; start</string>
+    <string name="setup_done">Ready — plug in the car and play music.</string>
+    <string name="setup_done_enhanced">All set — full detection enabled.</string>
+    <string name="setup_done_legacy">Ready — boost enabled (no PC needed).</string>
+    <string name="setup_shizuku_wait">Allow Shizuku on the next screen, then tap again.</string>
+    <string name="dump_granted">Detection: full (all apps)</string>
+    <string name="dump_missing">Detection: standard (works for Spotify etc.)</string>
     <string name="hint_usb">USB detected — boost will apply while music plays.</string>
     <string name="hint_bluetooth">Bluetooth detected — boost applies if Auto Car mode allows it.</string>
     <string name="hint_phone">On phone speaker — turn off Auto Car mode or plug into the car.</string>

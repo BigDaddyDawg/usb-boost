@@ -20,22 +20,19 @@ USB Boost does the same:
 ## Install on your phone
 
 1. Open **[Releases](https://github.com/BigDaddyDawg/usb-boost/releases)** on your Pixel
-2. Download the latest **`app-release.apk`** (v1.0.1+ — signed builds only)
-3. Allow install from browser / Files when prompted
-4. Open **USB Boost** → tap **Start**
-5. Play music in your usual app (Spotify, etc.) with the car plugged in via USB
+2. Download the latest **`app-release.apk`**
+3. Install, open **USB Boost**, tap **Set up & start**
+4. Plug into the car via USB and play music in Spotify (or your usual app)
 
-## One-time setup (recommended)
+No PC or ADB command required — the app configures itself for phone-only use.
 
-Like Wavelet/Poweramp, **enhanced session detection** needs the `DUMP` permission once. On a PC with USB debugging:
+## One-time setup (optional, for power users)
+
+Enhanced session detection via `DUMP` is optional. If you have Shizuku installed, **Set up & start** can grant it automatically. PC ADB:
 
 ```bash
 adb shell pm grant com.usbboost.app android.permission.DUMP
 ```
-
-Or tap **Copy ADB setup command** in the app and run it from a terminal.
-
-Without this, many players still work via session broadcasts; enhanced mode covers the rest.
 
 ## Settings
 

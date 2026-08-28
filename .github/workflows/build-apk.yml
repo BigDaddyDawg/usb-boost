@@ -48,10 +48,10 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.1
-          name: USB Boost v1.0.1
+          tag_name: v1.0.2
+          name: USB Boost v1.0.2
           body: |
-            **Fix:** APK is now signed — installs on Pixel without "App not installed".
-            Sideload app-release.apk, open USB Boost, tap Start, play music with USB plugged in.
+            Prominent boost level slider with live dB readout (0–12 dB).
+            Drag while music plays to tune car volume.
           files: app/build/outputs/apk/release/app-release.apk
           make_latest: true

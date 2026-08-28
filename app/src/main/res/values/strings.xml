@@ -4,8 +4,11 @@
     <string name="notification_channel">USB Boost active</string>
     <string name="enable_boost">Enable boost</string>
     <string name="auto_car_mode">Only boost in car / USB</string>
-    <string name="boost_label">Preamp boost</string>
+    <string name="boost_level_label">Boost level</string>
+    <string name="boost_level_hint">Drag while music plays — changes apply live</string>
+    <string name="boost_value">%1$d%%  (+ %2$.1f dB)</string>
     <string name="bass_label">Bass lift</string>
+    <string name="advanced_label">Advanced</string>
     <string name="enhanced_detection">Enhanced session detection</string>
     <string name="legacy_mode">Legacy mode (global mix)</string>
     <string name="start_on_boot">Start when phone reboots</string>

@@ -67,8 +67,9 @@ class BoostService : Service() {
 
     fun reloadFromUi() {
         val settings = prefs.load()
+        outputState = OutputMonitor.current(this)
+        applyToSessions(sessionTracker.activeSessions())
         sessionTracker.refresh(settings)
-        refreshOutput()
         val manager = getSystemService(NotificationManager::class.java)
         manager.notify(NOTIFICATION_ID, buildNotification(settings, outputState))
     }
@@ -108,7 +109,7 @@ class BoostService : Service() {
         val status = when {
             !settings.enabled -> "Boost paused"
             settings.autoCarMode && !output.carLikely && output.kind != OutputKind.USB -> "Waiting for car/USB"
-            else -> "Boosting ${output.label}"
+            else -> "Boost +${String.format("%.1f", settings.boostDecibels())} dB · ${output.label}"
         }
 
         return NotificationCompat.Builder(this, CHANNEL_ID)

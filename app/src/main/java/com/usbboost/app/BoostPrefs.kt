@@ -11,7 +11,14 @@ data class BoostSettings(
     val legacyMode: Boolean = false,
     val enhancedDetection: Boolean = true,
     val startOnBoot: Boolean = true
-)
+) {
+    /** Preamp gain in decibels (0–12 dB at 100%). */
+    fun boostDecibels(): Float = (boostPercent / 100f) * MAX_BOOST_DB
+
+    companion object {
+        const val MAX_BOOST_DB = 12f
+    }
+}
 
 class BoostPrefs(context: Context) {
     private val prefs: SharedPreferences =

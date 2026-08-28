@@ -96,8 +96,8 @@ class EffectChain(private val sessionId: Int) {
     }
 
     private fun percentToMillibels(percent: Int): Int {
-        // Up to ~8 dB preamp — similar headroom to Poweramp car presets.
-        return ((percent / 100f) * 800f).toInt()
+        // Up to 12 dB preamp at 100% slider.
+        return ((percent / 100f) * BoostSettings.MAX_BOOST_DB * 100f).toInt()
     }
 
     companion object {

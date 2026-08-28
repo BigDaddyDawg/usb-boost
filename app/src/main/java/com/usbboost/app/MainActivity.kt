@@ -18,7 +18,7 @@ class MainActivity : AppCompatActivity() {
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
-        if (granted) startBoosting()
+        if (granted) startBoosting(showToast = true)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,13 +51,17 @@ class MainActivity : AppCompatActivity() {
         binding.switchEnhanced.setOnCheckedChangeListener { _, _ -> persistAndApply() }
         binding.switchBoot.setOnCheckedChangeListener { _, _ -> persistAndApply() }
 
-        binding.sliderBoost.addOnChangeListener { _, _, _ ->
-            updateValueLabels(currentSettings())
-            persistAndApply()
+        binding.sliderBoost.addOnChangeListener { _, _, fromUser ->
+            if (!fromUser) return@addOnChangeListener
+            val updated = currentSettings()
+            updateValueLabels(updated)
+            saveAndReloadService(updated)
         }
-        binding.sliderBass.addOnChangeListener { _, _, _ ->
-            updateValueLabels(currentSettings())
-            persistAndApply()
+        binding.sliderBass.addOnChangeListener { _, _, fromUser ->
+            if (!fromUser) return@addOnChangeListener
+            val updated = currentSettings()
+            updateValueLabels(updated)
+            saveAndReloadService(updated)
         }
 
         binding.buttonStart.setOnClickListener { ensurePermissionAndStart() }
@@ -85,7 +89,11 @@ class MainActivity : AppCompatActivity() {
     )
 
     private fun updateValueLabels(settings: BoostSettings) {
-        binding.textBoostValue.text = getString(R.string.percent_value, settings.boostPercent)
+        binding.textBoostValue.text = getString(
+            R.string.boost_value,
+            settings.boostPercent,
+            settings.boostDecibels()
+        )
         binding.textBassValue.text = getString(R.string.percent_value, settings.bassPercent)
     }
 
@@ -100,22 +108,36 @@ class MainActivity : AppCompatActivity() {
         refreshStatus()
     }
 
+    private fun saveAndReloadService(settings: BoostSettings) {
+        prefs.save(settings)
+        if (settings.enabled) {
+            reloadService()
+        }
+        refreshStatus()
+    }
+
+    private fun reloadService() {
+        val intent = Intent(this, BoostService::class.java).setAction(BoostService.ACTION_RELOAD)
+        startForegroundService(intent)
+    }
+
     private fun ensurePermissionAndStart() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             when {
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-                    PackageManager.PERMISSION_GRANTED -> startBoosting()
+                    PackageManager.PERMISSION_GRANTED -> startBoosting(showToast = true)
                 else -> notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         } else {
-            startBoosting()
+            startBoosting(showToast = true)
         }
     }
 
-    private fun startBoosting() {
-        val intent = Intent(this, BoostService::class.java).setAction(BoostService.ACTION_RELOAD)
-        startForegroundService(intent)
-        Toast.makeText(this, R.string.service_started, Toast.LENGTH_SHORT).show()
+    private fun startBoosting(showToast: Boolean) {
+        reloadService()
+        if (showToast) {
+            Toast.makeText(this, R.string.service_started, Toast.LENGTH_SHORT).show()
+        }
         refreshStatus()
     }
 

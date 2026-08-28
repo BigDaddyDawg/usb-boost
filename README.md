@@ -28,7 +28,7 @@ No PC or ADB command required — the app configures itself for phone-only use.
 
 ## One-time setup (optional, for power users)
 
-Enhanced session detection via `DUMP` is optional. If you have Shizuku installed, **Set up & start** can grant it automatically. PC ADB:
+Enhanced session detection via `DUMP` is optional. PC ADB (only if you want every app covered):
 
 ```bash
 adb shell pm grant com.usbboost.app android.permission.DUMP

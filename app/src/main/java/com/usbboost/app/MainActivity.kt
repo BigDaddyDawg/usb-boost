@@ -10,20 +10,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.usbboost.app.databinding.ActivityMainBinding
-import rikka.shizuku.Shizuku
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: BoostPrefs
     private var pendingOneTapAfterNotification = false
-    private var pendingOneTapAfterShizuku = false
-
-    private val shizukuListener = Shizuku.OnRequestPermissionResultListener { _, grantResult ->
-        if (grantResult == PackageManager.PERMISSION_GRANTED && pendingOneTapAfterShizuku) {
-            pendingOneTapAfterShizuku = false
-            runOneTapSetup(showToast = true)
-        }
-    }
 
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -39,13 +30,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         prefs = BoostPrefs(this)
-        Shizuku.addOnRequestPermissionResultListener(shizukuListener)
         bindUi()
-    }
-
-    override fun onDestroy() {
-        Shizuku.removeOnRequestPermissionResultListener(shizukuListener)
-        super.onDestroy()
     }
 
     override fun onResume() {
@@ -106,25 +91,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun runOneTapSetup(showToast: Boolean) {
-        if (EnhancedPermissionHelper.needsShizukuPermission()) {
-            pendingOneTapAfterShizuku = true
-            EnhancedPermissionHelper.requestShizukuPermission()
-            if (showToast) {
-                Toast.makeText(this, R.string.setup_shizuku_wait, Toast.LENGTH_LONG).show()
-            }
-            return
-        }
-
         val setupSettings = SetupHelper.buildSettingsForSetup(this, currentSettings())
         prefs.save(setupSettings)
         applySettingsToUi(setupSettings)
         reloadService()
 
         if (showToast) {
-            val message = when {
-                OutputMonitor.hasDumpPermission(this) -> R.string.setup_done_enhanced
-                setupSettings.legacyMode -> R.string.setup_done_legacy
-                else -> R.string.setup_done
+            val message = if (OutputMonitor.hasDumpPermission(this)) {
+                R.string.setup_done_enhanced
+            } else {
+                R.string.setup_done_legacy
             }
             Toast.makeText(this, message, Toast.LENGTH_LONG).show()
         }

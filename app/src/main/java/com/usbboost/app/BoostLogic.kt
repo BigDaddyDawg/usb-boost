@@ -31,7 +31,7 @@ object BoostLogic {
      * Map 0..1 onto the equalizer's millibel range, relative to unity (0).
      */
     fun bandLevelMillibels(gainFraction: Float, min: Short, max: Short): Short {
-        val level = (gainFraction.coerceIn(0, 1f) * max).toInt()
+        val level = (gainFraction.coerceIn(0f, 1f) * max).toInt()
         return level.coerceIn(min.toInt(), max.toInt()).toShort()
     }
 

@@ -51,11 +51,11 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.2.0
-          name: USB Boost v1.2.0
+          tag_name: v1.2.1
+          name: USB Boost v1.2.1
           body: |
-            Crash fix: app opens without starting a service.
-            Root cause was using the Service context before Android attached it.
-            Turn on / Turn off now control boost. Tap Turn on after install.
+            QA pass: opens with boost off (no service).
+            Turn on asks for notifications first, then starts boost.
+            Turn off stops it. Safe to install after uninstalling older versions.
           files: app/build/outputs/apk/release/app-release.apk
           make_latest: true

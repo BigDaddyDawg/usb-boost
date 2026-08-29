@@ -14,40 +14,37 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 
-/**
- * Keep-alive only. Audio work lives in [BoostEngine].
- * Must call startForeground before doing anything else — field initializers
- * that touch Context crash because the Service is not attached yet.
- */
 class BoostService : Service() {
 
     override fun onCreate() {
         super.onCreate()
         isRunning = true
         createChannel()
-        goForeground(BoostPrefs(this).load())
-        runCatching { BoostEngine.start(this) }
-            .onFailure { Log.e(TAG, "Engine start failed", it) }
+        if (!goForeground(BoostPrefs(this).load())) {
+            isRunning = false
+            stopSelf()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_TOGGLE) {
-            BoostPrefs(this).save(BoostPrefs(this).load().copy(enabled = false))
-            BoostEngine.stop()
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
         val settings = BoostPrefs(this).load()
-        if (!settings.enabled) {
+        if (!goForeground(settings)) {
+            BoostEngine.stop()
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        val turningOff = intent?.action == ACTION_TOGGLE || !settings.enabled
+        if (turningOff) {
+            if (intent?.action == ACTION_TOGGLE) {
+                BoostPrefs(this).save(settings.copy(enabled = false))
+            }
             BoostEngine.stop()
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
         }
 
-        goForeground(settings)
         runCatching { BoostEngine.start(this) }
         return START_STICKY
     }
@@ -60,18 +57,17 @@ class BoostService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun goForeground(settings: BoostSettings) {
-        val notification = buildNotification(settings)
+    private fun goForeground(settings: BoostSettings): Boolean {
         val type = if (Build.VERSION.SDK_INT >= 34) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         } else {
             0
         }
-        runCatching {
-            ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type)
+        return runCatching {
+            ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(settings), type)
         }.onFailure { error ->
-            Log.e(TAG, "startForeground failed — boosting without keep-alive", error)
-        }
+            Log.e(TAG, "startForeground failed", error)
+        }.isSuccess
     }
 
     private fun buildNotification(settings: BoostSettings): Notification {
@@ -81,18 +77,15 @@ class BoostService : Service() {
             Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val turnOffIntent = Intent(this, BoostService::class.java).setAction(ACTION_TOGGLE)
         val turnOff = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             PendingIntent.getForegroundService(
-                this,
-                1,
-                Intent(this, BoostService::class.java).setAction(ACTION_TOGGLE),
+                this, 1, turnOffIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
         } else {
             PendingIntent.getService(
-                this,
-                1,
-                Intent(this, BoostService::class.java).setAction(ACTION_TOGGLE),
+                this, 1, turnOffIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
         }
@@ -134,9 +127,18 @@ class BoostService : Service() {
         var isRunning: Boolean = false
             private set
 
+        fun canStartForeground(context: Context): Boolean {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+            return context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+
         fun startSafely(context: Context) {
-            val intent = Intent(context, BoostService::class.java)
-            runCatching { context.startForegroundService(intent) }
+            if (!canStartForeground(context)) {
+                Log.w(TAG, "Skip keep-alive: notifications not granted")
+                return
+            }
+            runCatching { context.startForegroundService(Intent(context, BoostService::class.java)) }
                 .onFailure { Log.w(TAG, "Keep-alive service did not start", it) }
         }
 

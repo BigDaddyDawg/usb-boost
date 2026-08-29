@@ -27,53 +27,55 @@ object OutputMonitor {
     }
 
     fun current(context: Context): OutputState {
-        val audioManager = context.getSystemService(AudioManager::class.java)
-        val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-        val usbCable = usbCableConnected(context)
+        return runCatching {
+            val audioManager = context.getSystemService(AudioManager::class.java)
+                ?: return OutputState(OutputKind.PHONE, "Phone speaker", false)
+            val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+            val usbCable = usbCableConnected(context)
 
-        val usb = devices.firstOrNull {
-            it.type == AudioDeviceInfo.TYPE_USB_DEVICE ||
-                it.type == AudioDeviceInfo.TYPE_USB_HEADSET ||
-                it.type == AudioDeviceInfo.TYPE_USB_ACCESSORY
-        }
-        if (usb != null || usbCable) {
-            return OutputState(
-                kind = OutputKind.USB,
-                label = usb?.productName?.toString() ?: "USB / Android Auto",
-                carLikely = true
-            )
-        }
+            val usb = devices.firstOrNull {
+                it.type == AudioDeviceInfo.TYPE_USB_DEVICE ||
+                    it.type == AudioDeviceInfo.TYPE_USB_HEADSET ||
+                    it.type == AudioDeviceInfo.TYPE_USB_ACCESSORY
+            }
+            if (usb != null || usbCable) {
+                return OutputState(
+                    kind = OutputKind.USB,
+                    label = usb?.productName?.toString()?.takeIf { it.isNotBlank() } ?: "USB / Android Auto",
+                    carLikely = true
+                )
+            }
 
-        val wired = devices.firstOrNull {
-            it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
-                it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
-                it.type == AudioDeviceInfo.TYPE_AUX_LINE
-        }
-        if (wired != null) {
-            return OutputState(
-                kind = OutputKind.OTHER,
-                label = wired.productName?.toString() ?: "Wired output",
-                carLikely = true
-            )
-        }
+            val wired = devices.firstOrNull {
+                it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
+                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
+                    it.type == AudioDeviceInfo.TYPE_AUX_LINE
+            }
+            if (wired != null) {
+                return OutputState(
+                    kind = OutputKind.OTHER,
+                    label = wired.productName?.toString()?.takeIf { it.isNotBlank() } ?: "Wired output",
+                    carLikely = true
+                )
+            }
 
-        val bt = devices.firstOrNull {
-            it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
-                it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
-        }
-        if (bt != null) {
-            return OutputState(
-                kind = OutputKind.BLUETOOTH,
-                label = bt.productName?.toString() ?: "Bluetooth",
-                carLikely = bt.productName?.toString()?.contains("car", ignoreCase = true) == true
-            )
-        }
+            val bt = devices.firstOrNull {
+                it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                    it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+            }
+            if (bt != null) {
+                val name = bt.productName?.toString().orEmpty()
+                return OutputState(
+                    kind = OutputKind.BLUETOOTH,
+                    label = name.ifBlank { "Bluetooth" },
+                    carLikely = name.contains("car", ignoreCase = true)
+                )
+            }
 
-        return OutputState(
-            kind = OutputKind.PHONE,
-            label = "Phone speaker",
-            carLikely = false
-        )
+            OutputState(OutputKind.PHONE, "Phone speaker", false)
+        }.getOrElse {
+            OutputState(OutputKind.PHONE, "Phone speaker", false)
+        }
     }
 
     fun hasDumpPermission(context: Context): Boolean {

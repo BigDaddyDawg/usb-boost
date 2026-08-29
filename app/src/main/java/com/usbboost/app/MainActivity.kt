@@ -12,11 +12,16 @@ import com.usbboost.app.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: BoostPrefs
-    private var askedNotifications = false
+    private var pendingEnable = false
 
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* boost stays off until the user taps Turn on */ }
+    ) {
+        if (pendingEnable) {
+            pendingEnable = false
+            applyBoostOn()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,12 +30,14 @@ class MainActivity : AppCompatActivity() {
         prefs = BoostPrefs(this)
         prefs.applyOutOfBoxDefaults()
         bindUi()
-        requestNotificationsIfNeeded()
-        // Do not start a foreground service from onCreate — that crashed the app on open.
     }
 
     override fun onResume() {
         super.onResume()
+        if (prefs.load().enabled) {
+            runCatching { BoostEngine.start(this) }
+            BoostService.startSafely(this)
+        }
         refreshStatus()
         syncToggle()
     }
@@ -49,7 +56,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.switchAutoCar.setOnCheckedChangeListener { _, _ ->
             prefs.save(currentSettings())
-            if (prefs.load().enabled) BoostEngine.start(this)
+            if (prefs.load().enabled) runCatching { BoostEngine.start(this) }
             refreshStatus()
         }
 
@@ -58,7 +65,7 @@ class MainActivity : AppCompatActivity() {
             val updated = currentSettings()
             updateValueLabels(updated)
             prefs.save(updated)
-            if (updated.enabled) BoostEngine.start(this)
+            if (updated.enabled) runCatching { BoostEngine.start(this) }
             refreshStatus()
         }
         binding.sliderBass.addOnChangeListener { _, _, fromUser ->
@@ -66,22 +73,41 @@ class MainActivity : AppCompatActivity() {
             val updated = currentSettings()
             updateValueLabels(updated)
             prefs.save(updated)
-            if (updated.enabled) BoostEngine.start(this)
+            if (updated.enabled) runCatching { BoostEngine.start(this) }
             refreshStatus()
         }
     }
 
     private fun setBoostEnabled(enabled: Boolean) {
-        prefs.save(currentSettings().copy(enabled = enabled))
-        binding.switchEnabled.isChecked = enabled
         if (enabled) {
-            BoostEngine.start(this)
-            BoostService.startSafely(this)
+            if (needsNotificationPermission()) {
+                pendingEnable = true
+                notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return
+            }
+            applyBoostOn()
         } else {
+            prefs.save(currentSettings().copy(enabled = false))
+            binding.switchEnabled.isChecked = false
             BoostService.stop(this)
+            syncToggle()
+            refreshStatus()
         }
+    }
+
+    private fun applyBoostOn() {
+        prefs.save(currentSettings().copy(enabled = true))
+        binding.switchEnabled.isChecked = true
+        runCatching { BoostEngine.start(this) }
+        BoostService.startSafely(this)
         syncToggle()
         refreshStatus()
+    }
+
+    private fun needsNotificationPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
     }
 
     private fun syncToggle() {
@@ -110,18 +136,6 @@ class MainActivity : AppCompatActivity() {
             settings.boostDecibels()
         )
         binding.textBassValue.text = getString(R.string.percent_value, settings.bassPercent)
-    }
-
-    private fun requestNotificationsIfNeeded() {
-        if (askedNotifications) return
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-        askedNotifications = true
-        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun refreshStatus() {

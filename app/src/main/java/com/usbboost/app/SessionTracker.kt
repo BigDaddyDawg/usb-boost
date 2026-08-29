@@ -21,6 +21,7 @@ class SessionTracker(
 
     private val playbackCallback = object : AudioManager.AudioPlaybackCallback() {
         override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>) {
+            if (stopped) return
             val ids = configs.mapNotNull { extractSessionId(it) }.toSet()
             if (ids.isNotEmpty()) {
                 updateSessions(ids)
@@ -28,7 +29,10 @@ class SessionTracker(
         }
     }
 
+    private var stopped = false
+
     fun start(settings: BoostSettings) {
+        stopped = false
         val am = audioManager ?: return
         runCatching { am.unregisterAudioPlaybackCallback(playbackCallback) }
         runCatching { am.registerAudioPlaybackCallback(playbackCallback, mainHandler) }
@@ -37,33 +41,39 @@ class SessionTracker(
     }
 
     fun stop() {
+        stopped = true
         pollRunnable?.let { mainHandler.removeCallbacks(it) }
         pollRunnable = null
         runCatching { audioManager?.unregisterAudioPlaybackCallback(playbackCallback) }
+        executor.shutdownNow()
         knownSessions.clear()
-        notifyChange()
     }
 
     fun refresh(settings: BoostSettings) {
-        executor.execute {
-            val discovered = linkedSetOf<Int>()
-            discovered.addAll(readActiveSessionsViaCallback())
-            if (settings.enhancedDetection && OutputMonitor.hasDumpPermission(context)) {
-                discovered.addAll(readSessionsFromDump())
-            }
-            if (settings.legacyMode) {
-                discovered.add(0)
-            }
-            mainHandler.post {
-                if (discovered.isNotEmpty()) {
-                    knownSessions.addAll(discovered)
+        if (stopped) return
+        runCatching {
+            executor.execute {
+                if (stopped) return@execute
+                val discovered = linkedSetOf<Int>()
+                discovered.addAll(readActiveSessionsViaCallback())
+                if (settings.enhancedDetection && OutputMonitor.hasDumpPermission(context)) {
+                    discovered.addAll(readSessionsFromDump())
                 }
                 if (settings.legacyMode) {
-                    knownSessions.add(0)
-                } else {
-                    knownSessions.remove(0)
+                    discovered.add(0)
                 }
-                notifyChange()
+                mainHandler.post {
+                    if (stopped) return@post
+                    if (discovered.isNotEmpty()) {
+                        knownSessions.addAll(discovered)
+                    }
+                    if (settings.legacyMode) {
+                        knownSessions.add(0)
+                    } else {
+                        knownSessions.remove(0)
+                    }
+                    notifyChange()
+                }
             }
         }
     }
@@ -114,8 +124,9 @@ class SessionTracker(
         pollRunnable?.let { mainHandler.removeCallbacks(it) }
         val runnable = object : Runnable {
             override fun run() {
+                if (stopped) return
                 refresh(BoostPrefs(context).load())
-                mainHandler.postDelayed(this, POLL_INTERVAL_MS)
+                if (!stopped) mainHandler.postDelayed(this, POLL_INTERVAL_MS)
             }
         }
         pollRunnable = runnable

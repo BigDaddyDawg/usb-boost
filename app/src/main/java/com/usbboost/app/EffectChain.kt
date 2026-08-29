@@ -16,15 +16,15 @@ class EffectChain(private val sessionId: Int) {
             return
         }
 
-        val active = !settings.autoCarMode || carActive
+        val active = BoostLogic.shouldApplyEffects(settings.enabled, settings.autoCarMode, carActive)
         if (!active) {
             release()
             return
         }
 
         ensureEffects()
-        val boostMb = percentToMillibels(settings.boostPercent)
-        val bassStrength = ((settings.bassPercent / 100f) * 1000f).toInt().coerceIn(0, 1000)
+        val boostMb = BoostLogic.millibels(settings.boostPercent)
+        val bassStrength = BoostLogic.bassStrength(settings.bassPercent)
 
         runCatching {
             loudness?.setTargetGain(boostMb)
@@ -94,11 +94,6 @@ class EffectChain(private val sessionId: Int) {
         equalizer = null
         loudness = null
         bassBoost = null
-    }
-
-    private fun percentToMillibels(percent: Int): Int {
-        // Up to 12 dB preamp at 100% slider.
-        return ((percent / 100f) * BoostSettings.MAX_BOOST_DB * 100f).toInt()
     }
 
     companion object {

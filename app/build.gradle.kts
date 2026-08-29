@@ -11,8 +11,8 @@ android {
         applicationId = "com.usbboost.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.1.1"
+        versionCode = 7
+        versionName = "1.2.0"
     }
 
     buildTypes {
@@ -47,4 +47,5 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+    testImplementation("junit:junit:4.13.2")
 }

@@ -16,9 +16,7 @@ class MainActivity : AppCompatActivity() {
 
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) {
-        applyEnabledState()
-    }
+    ) { /* boost stays off until the user taps Turn on */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,7 +26,7 @@ class MainActivity : AppCompatActivity() {
         prefs.applyOutOfBoxDefaults()
         bindUi()
         requestNotificationsIfNeeded()
-        applyEnabledState()
+        // Do not start a foreground service from onCreate — that crashed the app on open.
     }
 
     override fun onResume() {
@@ -49,17 +47,18 @@ class MainActivity : AppCompatActivity() {
         binding.buttonOn.setOnClickListener { setBoostEnabled(true) }
         binding.buttonOff.setOnClickListener { setBoostEnabled(false) }
 
-        binding.switchEnabled.setOnCheckedChangeListener { _, isChecked ->
-            setBoostEnabled(isChecked)
+        binding.switchAutoCar.setOnCheckedChangeListener { _, _ ->
+            prefs.save(currentSettings())
+            if (prefs.load().enabled) BoostEngine.start(this)
+            refreshStatus()
         }
-        binding.switchAutoCar.setOnCheckedChangeListener { _, _ -> persistAndApply() }
 
         binding.sliderBoost.addOnChangeListener { _, _, fromUser ->
             if (!fromUser) return@addOnChangeListener
             val updated = currentSettings()
             updateValueLabels(updated)
             prefs.save(updated)
-            if (updated.enabled) BoostService.startSafely(this)
+            if (updated.enabled) BoostEngine.start(this)
             refreshStatus()
         }
         binding.sliderBass.addOnChangeListener { _, _, fromUser ->
@@ -67,17 +66,22 @@ class MainActivity : AppCompatActivity() {
             val updated = currentSettings()
             updateValueLabels(updated)
             prefs.save(updated)
-            if (updated.enabled) BoostService.startSafely(this)
+            if (updated.enabled) BoostEngine.start(this)
             refreshStatus()
         }
     }
 
     private fun setBoostEnabled(enabled: Boolean) {
-        binding.switchEnabled.setOnCheckedChangeListener(null)
+        prefs.save(currentSettings().copy(enabled = enabled))
         binding.switchEnabled.isChecked = enabled
-        binding.switchEnabled.setOnCheckedChangeListener { _, isChecked -> setBoostEnabled(isChecked) }
-        persistAndApply()
+        if (enabled) {
+            BoostEngine.start(this)
+            BoostService.startSafely(this)
+        } else {
+            BoostService.stop(this)
+        }
         syncToggle()
+        refreshStatus()
     }
 
     private fun syncToggle() {
@@ -106,22 +110,6 @@ class MainActivity : AppCompatActivity() {
             settings.boostDecibels()
         )
         binding.textBassValue.text = getString(R.string.percent_value, settings.bassPercent)
-    }
-
-    private fun persistAndApply() {
-        val settings = currentSettings()
-        prefs.save(settings)
-        applyEnabledState()
-        refreshStatus()
-        syncToggle()
-    }
-
-    private fun applyEnabledState() {
-        if (prefs.load().enabled) {
-            BoostService.startSafely(this)
-        } else {
-            BoostService.stop(this)
-        }
     }
 
     private fun requestNotificationsIfNeeded() {

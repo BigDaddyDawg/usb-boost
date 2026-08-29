@@ -1,6 +1,5 @@
 package com.usbboost.app
 
-import android.media.audiofx.AudioEffect
 import android.media.audiofx.BassBoost
 import android.media.audiofx.Equalizer
 import android.media.audiofx.LoudnessEnhancer
@@ -51,16 +50,18 @@ class EffectChain(private val sessionId: Int) {
         val span = (max - min).toFloat()
 
         for (band in 0 until bands) {
-            val center = eq.getCenterFreq(band.toShort()) / 1000f
-            val gain = when {
-                center < 120f -> settings.bassPercent / 100f * 0.85f
-                center < 350f -> settings.bassPercent / 100f * 0.45f
-                center in 800f..3500f -> settings.boostPercent / 100f * 0.35f
-                center > 9000f -> settings.boostPercent / 100f * 0.15f
-                else -> 0.12f
+            runCatching {
+                val center = eq.getCenterFreq(band.toShort()) / 1000f
+                val gain = when {
+                    center < 120f -> settings.bassPercent / 100f * 0.85f
+                    center < 350f -> settings.bassPercent / 100f * 0.45f
+                    center in 800f..3500f -> settings.boostPercent / 100f * 0.35f
+                    center > 9000f -> settings.boostPercent / 100f * 0.15f
+                    else -> 0.12f
+                }
+                val level = (min + span * gain).toInt().toShort()
+                eq.setBandLevel(band.toShort(), level)
             }
-            val level = (min + span * gain).toInt().toShort()
-            runCatching { eq.setBandLevel(band.toShort(), level) }
         }
         eq.enabled = true
     }

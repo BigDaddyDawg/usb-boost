@@ -17,7 +17,6 @@ class SessionTracker(
     private val knownSessions = ConcurrentHashMap.newKeySet<Int>()
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var legacyAttached = false
     private var pollRunnable: Runnable? = null
 
     private val playbackCallback = object : AudioManager.AudioPlaybackCallback() {
@@ -30,8 +29,9 @@ class SessionTracker(
     }
 
     fun start(settings: BoostSettings) {
-        audioManager.unregisterAudioPlaybackCallback(playbackCallback)
-        audioManager.registerAudioPlaybackCallback(playbackCallback, mainHandler)
+        val am = audioManager ?: return
+        runCatching { am.unregisterAudioPlaybackCallback(playbackCallback) }
+        runCatching { am.registerAudioPlaybackCallback(playbackCallback, mainHandler) }
         schedulePoll()
         refresh(settings)
     }
@@ -39,9 +39,8 @@ class SessionTracker(
     fun stop() {
         pollRunnable?.let { mainHandler.removeCallbacks(it) }
         pollRunnable = null
-        runCatching { audioManager.unregisterAudioPlaybackCallback(playbackCallback) }
+        runCatching { audioManager?.unregisterAudioPlaybackCallback(playbackCallback) }
         knownSessions.clear()
-        legacyAttached = false
         notifyChange()
     }
 
@@ -64,31 +63,19 @@ class SessionTracker(
                 } else {
                     knownSessions.remove(0)
                 }
-                legacyAttached = settings.legacyMode
                 notifyChange()
             }
         }
     }
 
-    fun trackSession(sessionId: Int) {
-        if (sessionId >= 0) {
-            knownSessions.add(sessionId)
-            notifyChange()
-        }
-    }
-
-    fun untrackSession(sessionId: Int) {
-        knownSessions.remove(sessionId)
-        notifyChange()
-    }
-
     fun activeSessions(): Set<Int> = knownSessions.toSet()
 
     private fun readActiveSessionsViaCallback(): Set<Int> {
+        val am = audioManager ?: return emptySet()
         return runCatching {
             val method = AudioManager::class.java.getMethod("getActivePlaybackConfigurations")
             @Suppress("UNCHECKED_CAST")
-            val configs = method.invoke(audioManager) as List<AudioPlaybackConfiguration>
+            val configs = method.invoke(am) as List<AudioPlaybackConfiguration>
             configs.mapNotNull { extractSessionId(it) }.toSet()
         }.getOrElse { emptySet() }
     }

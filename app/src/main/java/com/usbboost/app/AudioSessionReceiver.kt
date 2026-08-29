@@ -7,16 +7,10 @@ import android.media.audiofx.AudioEffect
 
 class AudioSessionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        if (!BoostPrefs(context).load().enabled) return
         val sessionId = intent.getIntExtra(AudioEffect.EXTRA_AUDIO_SESSION, -1)
         if (sessionId < 0) return
-
-        when (intent.action) {
-            AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION -> {
-                BoostService.notifyIfRunning(context, sessionId = sessionId)
-            }
-            AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION -> {
-                BoostService.notifyIfRunning(context, untrack = sessionId)
-            }
-        }
+        // Never start a foreground service from here — that crashes on Pixel.
+        runCatching { BoostEngine.start(context.applicationContext) }
     }
 }

@@ -16,7 +16,7 @@
     <string name="output_label">Output: %1$s</string>
     <string name="status_off">Boost off</string>
     <string name="status_waiting">Waiting for car / USB</string>
-    <string name="status_on">Boost +%1$.1f dB · %2$s</string>
+    <string name="status_on_simple">Boost +%1$.1f dB</string>
     <string name="hint_off">Boost is off. Tap Turn on when you want it.</string>
     <string name="hint_usb">USB / Android Auto — boost is on.</string>
     <string name="hint_bluetooth">Bluetooth — boost is on if this is the car.</string>

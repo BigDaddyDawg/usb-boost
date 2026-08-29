@@ -30,6 +30,9 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Unit tests
+        run: ./gradlew test --no-daemon
+
       - name: Build release APK
         run: ./gradlew assembleRelease --no-daemon
 
@@ -48,10 +51,11 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.1
-          name: USB Boost v1.1.1
+          tag_name: v1.2.0
+          name: USB Boost v1.2.0
           body: |
-            Crash fix: no longer starts a background service when other apps play music.
-            Clear **Turn on** / **Turn off** buttons.
+            Crash fix: app opens without starting a service.
+            Root cause was using the Service context before Android attached it.
+            Turn on / Turn off now control boost. Tap Turn on after install.
           files: app/build/outputs/apk/release/app-release.apk
           make_latest: true

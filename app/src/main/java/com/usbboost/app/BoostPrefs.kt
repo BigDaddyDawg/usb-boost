@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 
 data class BoostSettings(
-    val enabled: Boolean = true,
+    val enabled: Boolean = false,
     val autoCarMode: Boolean = true,
     val boostPercent: Int = 65,
     val bassPercent: Int = 55,
@@ -24,7 +24,7 @@ class BoostPrefs(private val context: Context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun load(): BoostSettings = BoostSettings(
-        enabled = prefs.getBoolean(KEY_ENABLED, true),
+        enabled = prefs.getBoolean(KEY_ENABLED, false),
         autoCarMode = prefs.getBoolean(KEY_AUTO_CAR, true),
         boostPercent = prefs.getInt(KEY_BOOST, 65).coerceIn(0, 100),
         bassPercent = prefs.getInt(KEY_BASS, 55).coerceIn(0, 100),
@@ -46,6 +46,18 @@ class BoostPrefs(private val context: Context) {
     }
 
     fun applyOutOfBoxDefaults() {
+        if (!prefs.getBoolean(KEY_V12_SAFE, false)) {
+            save(
+                load().copy(
+                    enabled = false,
+                    legacyMode = true,
+                    startOnBoot = true,
+                    enhancedDetection = true
+                )
+            )
+            prefs.edit().putBoolean(KEY_V12_SAFE, true).apply()
+            return
+        }
         save(
             load().copy(
                 legacyMode = true,
@@ -71,5 +83,6 @@ class BoostPrefs(private val context: Context) {
         private const val KEY_ENHANCED = "enhanced"
         private const val KEY_BOOT = "boot"
         private const val KEY_BATTERY_PROMPT = "battery_prompt"
+        private const val KEY_V12_SAFE = "v12_safe_launch"
     }
 }

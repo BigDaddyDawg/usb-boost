@@ -7,7 +7,7 @@ Free Android app for your **Pixel 8** that boosts music when you're on **USB / A
 Poweramp doesn't re-route your audio. It attaches Android's built-in effects to whatever app is playing:
 
 1. **Find the active audio session** (Spotify, YouTube Music, etc.)
-2. **Insert effects on that session** — `LoudnessEnhancer` (preamp), `Equalizer`, `BassBoost`
+2. **Insert effects on that session** — `DynamicsProcessing` input gain (actual volume, no compressor), plus bass EQ if you want it
 3. **Switch on when USB is connected** so car audio gets the boost, not your pocket
 
 USB Boost does the same:
@@ -46,7 +46,7 @@ adb shell pm grant com.usbboost.app android.permission.DUMP
 |--------|----------------|
 | **Enable boost** | Master on/off |
 | **Only boost in car / USB** | Skips boost on phone speaker |
-| **Preamp boost** | Loudness gain (up to ~8 dB) |
+| **Preamp boost** | Input gain (up to 12 dB) — louder, not compressed |
 | **Bass lift** | Low-end EQ + bass boost |
 | **Enhanced session detection** | Uses DUMP to find all players |
 | **Legacy mode** | Attach to global mix (session 0) — try if a player is stubborn |

@@ -5,6 +5,10 @@ object BoostLogic {
         return ((percent.coerceIn(0, 100) / 100f) * BoostSettings.MAX_BOOST_DB * 100f).toInt()
     }
 
+    fun boostDecibels(percent: Int): Float {
+        return (percent.coerceIn(0, 100) / 100f) * BoostSettings.MAX_BOOST_DB
+    }
+
     fun sessionsToProcess(discovered: Set<Int>, legacyMode: Boolean): Set<Int> {
         val real = discovered.filter { it > 0 }.toSet()
         if (real.isNotEmpty()) return real
@@ -25,20 +29,25 @@ object BoostLogic {
 
     /**
      * Map 0..1 onto the equalizer's millibel range, relative to unity (0).
-     * The old code mapped onto [min, max], which turned a "boost" into a cut.
      */
     fun bandLevelMillibels(gainFraction: Float, min: Short, max: Short): Short {
-        val level = (gainFraction.coerceIn(0f, 1f) * max).toInt()
+        val level = (gainFraction.coerceIn(0, 1f) * max).toInt()
         return level.coerceIn(min.toInt(), max.toInt()).toShort()
     }
 
-    fun eqGainFraction(centerHz: Float, boostPercent: Int, bassPercent: Int): Float {
-        val preamp = boostPercent.coerceIn(0, 100) / 100f
+    /** Bass slider only — volume boost is applied as input gain, not EQ. */
+    fun eqBassGainFraction(centerHz: Float, bassPercent: Int): Float {
         val bass = bassPercent.coerceIn(0, 100) / 100f
         return when {
-            centerHz < 120f -> (preamp + bass * 0.5f).coerceAtMost(1f)
-            centerHz < 350f -> (preamp + bass * 0.25f).coerceAtMost(1f)
-            else -> preamp
+            centerHz < 120f -> bass
+            centerHz < 350f -> bass * 0.45f
+            else -> 0f
         }
+    }
+
+    /** Fallback when DynamicsProcessing is unavailable: raise every band by the boost. */
+    fun eqFallbackGainFraction(centerHz: Float, boostPercent: Int, bassPercent: Int): Float {
+        return (eqBassGainFraction(centerHz, bassPercent) + boostPercent.coerceIn(0, 100) / 100f)
+            .coerceAtMost(1f)
     }
 }

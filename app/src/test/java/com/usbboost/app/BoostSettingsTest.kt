@@ -64,10 +64,19 @@ class BoostSettingsTest {
     }
 
     @Test
-    fun eqGainUsesBoostAsPreampAndBassOnLows() {
-        assertEquals(0.65f, BoostLogic.eqGainFraction(1000f, boostPercent = 65, bassPercent = 0), 0.01f)
-        assertTrue(BoostLogic.eqGainFraction(80f, boostPercent = 50, bassPercent = 100) > 0.5f)
-        assertEquals(0f, BoostLogic.eqGainFraction(1000f, boostPercent = 0, bassPercent = 0), 0.01f)
+    fun eqBassDoesNotTouchMidsAndHighs() {
+        assertEquals(0f, BoostLogic.eqBassGainFraction(1000f, bassPercent = 80), 0.01f)
+        assertEquals(0f, BoostLogic.eqBassGainFraction(8000f, bassPercent = 100), 0.01f)
+        assertEquals(1f, BoostLogic.eqBassGainFraction(80f, bassPercent = 100), 0.01f)
+        assertTrue(BoostLogic.eqBassGainFraction(200f, bassPercent = 100) > 0f)
+        assertTrue(BoostLogic.eqBassGainFraction(200f, bassPercent = 100) < 1f)
+    }
+
+    @Test
+    fun boostDecibelsMatchTheSlider() {
+        assertEquals(0f, BoostLogic.boostDecibels(0), 0.01f)
+        assertEquals(7.8f, BoostLogic.boostDecibels(65), 0.01f)
+        assertEquals(12f, BoostLogic.boostDecibels(100), 0.01f)
     }
 
     @Test

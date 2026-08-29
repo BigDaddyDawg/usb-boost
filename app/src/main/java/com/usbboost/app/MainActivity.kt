@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     private var suppressEq = false
     private var suppressPower = false
     private var pendingUpdate: UpdateInfo? = null
+    private var resumeInstallAfterPermission = false
     private val io = Executors.newSingleThreadExecutor()
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshRunnable = object : Runnable {
@@ -58,17 +59,26 @@ class MainActivity : AppCompatActivity() {
         if (intent.getBooleanExtra(EXTRA_ENABLE, false)) {
             setBoostEnabled(true)
         }
+        handleInstallResult(intent)
     }
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         if (intent.getBooleanExtra(EXTRA_ENABLE, false)) {
             setBoostEnabled(true)
         }
+        handleInstallResult(intent)
     }
 
     override fun onResume() {
         super.onResume()
+        if (resumeInstallAfterPermission && pendingUpdate != null &&
+            !AppUpdater.needsInstallPermission(this)
+        ) {
+            resumeInstallAfterPermission = false
+            installUpdate(pendingUpdate!!)
+        }
         val settings = prefs.load()
         if (settings.enabled || settings.autoOnUsb) {
             runCatching { BoostEngine.start(this) }
@@ -378,14 +388,18 @@ class MainActivity : AppCompatActivity() {
         }
         binding.textUpdate.text = getString(R.string.update_checking)
         io.execute {
-            val info = AppUpdater.check(BuildConfig.VERSION_CODE)
+            val result = AppUpdater.check(BuildConfig.VERSION_CODE)
             runOnUiThread {
-                if (info == null) {
-                    binding.textUpdate.text = getString(R.string.update_none)
-                } else {
-                    pendingUpdate = info
-                    binding.textUpdate.text = getString(R.string.update_found, info.versionName)
-                    binding.buttonUpdate.text = getString(R.string.update_found, info.versionName)
+                when (result) {
+                    is UpdateCheck.UpToDate ->
+                        binding.textUpdate.text = getString(R.string.update_none)
+                    is UpdateCheck.Failed ->
+                        binding.textUpdate.text = getString(R.string.update_check_failed)
+                    is UpdateCheck.Available -> {
+                        pendingUpdate = result.info
+                        binding.textUpdate.text = getString(R.string.update_found, result.info.versionName)
+                        binding.buttonUpdate.text = getString(R.string.update_found, result.info.versionName)
+                    }
                 }
             }
         }
@@ -393,6 +407,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun installUpdate(info: UpdateInfo) {
         if (AppUpdater.needsInstallPermission(this)) {
+            resumeInstallAfterPermission = true
             startActivity(AppUpdater.installPermissionIntent(this))
             binding.textUpdate.text = getString(R.string.update_allow_install)
             return
@@ -401,12 +416,44 @@ class MainActivity : AppCompatActivity() {
         io.execute {
             runCatching {
                 val apk = File(cacheDir, "usb-boost-update.apk")
-                AppUpdater.download(info.apkUrl, apk)
+                AppUpdater.download(AppUpdater.apkUrls(info), apk)
                 apk
             }.onSuccess { apk ->
-                runOnUiThread { startActivity(AppUpdater.installIntent(this, apk)) }
+                runOnUiThread { startInstall(info, apk) }
             }.onFailure {
-                runOnUiThread { binding.textUpdate.text = getString(R.string.update_failed) }
+                runOnUiThread { binding.textUpdate.text = getString(R.string.update_download_failed) }
+            }
+        }
+    }
+
+    private fun startInstall(info: UpdateInfo, apk: File) {
+        if (AppUpdater.signaturesMatch(this, apk) == false) {
+            AppUpdater.copyToDownloads(this, apk, info.versionName)
+            binding.textUpdate.text = getString(R.string.update_signature)
+            return
+        }
+        runCatching { AppUpdater.install(this, apk) }
+            .onFailure {
+                AppUpdater.copyToDownloads(this, apk, info.versionName)
+                binding.textUpdate.text = getString(R.string.update_install_failed)
+            }
+    }
+
+    private fun handleInstallResult(intent: android.content.Intent) {
+        AppUpdater.pendingUserAction(intent)?.let { confirm ->
+            confirm.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            runCatching { startActivity(confirm) }
+            return
+        }
+        AppUpdater.handleInstallResult(intent)?.let { message ->
+            if (message == AppUpdater.SIGNATURE_MESSAGE) {
+                pendingUpdate?.let { info ->
+                    val apk = File(cacheDir, "usb-boost-update.apk")
+                    if (apk.exists()) AppUpdater.copyToDownloads(this, apk, info.versionName)
+                }
+                binding.textUpdate.text = getString(R.string.update_signature)
+            } else {
+                binding.textUpdate.text = getString(R.string.update_install_failed)
             }
         }
     }

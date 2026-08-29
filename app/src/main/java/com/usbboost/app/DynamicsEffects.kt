@@ -5,8 +5,8 @@ import android.os.Build
 import android.util.Log
 
 /**
- * Loudness maximizer: light input gain → vocal presence EQ → 3-band compressor
- * with make-up (mids highest) → peak limiter.
+ * Loudness maximizer: input drive → vocal presence EQ → 3-band compressor
+ * with make-up (mids highest, bass held back) → true-peak limiter.
  * Isolated so EffectChain can load on API 26–27.
  */
 internal object DynamicsEffects {
@@ -93,9 +93,9 @@ internal object DynamicsEffects {
 
     private fun applyMbc(dp: DynamicsProcessing, params: MaximizerParams): Boolean {
         return runCatching {
-            dp.setMbcBandAllChannelsTo(0, mbcBand(BASS_HZ, 15f, 120f, params, params.bassPostGainDb))
-            dp.setMbcBandAllChannelsTo(1, mbcBand(MID_HZ, 8f, 70f, params, params.midPostGainDb))
-            dp.setMbcBandAllChannelsTo(2, mbcBand(HIGH_HZ, 4f, 45f, params, params.highPostGainDb))
+            dp.setMbcBandAllChannelsTo(0, mbcBand(BASS_HZ, 12f, 100f, params, params.bassPostGainDb))
+            dp.setMbcBandAllChannelsTo(1, mbcBand(MID_HZ, 6f, 55f, params, params.midPostGainDb))
+            dp.setMbcBandAllChannelsTo(2, mbcBand(HIGH_HZ, 4f, 40f, params, params.highPostGainDb))
             true
         }.onFailure {
             Log.w(TAG, "MBC failed", it)

@@ -21,6 +21,9 @@ class CarOutputTest {
         assertTrue(
             BoostLogic.shouldApplyEffects(enabled = true, autoCarMode = true, carActive = state.carLikely)
         )
+        val max = BoostLogic.maximizerParams(100, carActive = state.carLikely)
+        assertTrue(max.useDynamics)
+        assertEquals(19f, max.displayedDb, 0.01f)
     }
 
     @Test

@@ -52,13 +52,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v2.1.1
-          name: USB Boost 2.5.0
+          name: USB Boost 2.6.0
           body: |
             Always the same link — the APK is replaced on every update.
 
             1. Install app-release.apk, or tap Check for update if you already have 2.3.0+
             2. Flip Boost on, drag the big slider, lock onto Spotify if asked
-            3. USB/car: IntelliLink counts as connected; boost is about 2–3× louder and clearer
+            3. USB/car: IntelliLink counts as connected; full slider is about another 3× on top of 2.5.0, still clear
+            4. If Check for update is blocked by Android, uninstall once, then open Downloads and tap the APK
           files: app/build/outputs/apk/release/app-release.apk
           overwrite_files: true
           make_latest: true

@@ -40,13 +40,29 @@ class EffectChain(private val sessionId: Int) {
 
     private fun applyLoudness(gainMb: Int): Boolean {
         val le = loudness ?: return false
-        return runCatching {
-            le.setTargetGain(gainMb)
-            le.enabled = gainMb > 0
-            true
-        }.onFailure {
-            Log.w(TAG, "LoudnessEnhancer update failed for session $sessionId", it)
-        }.getOrDefault(false)
+        if (gainMb <= 0) {
+            return runCatching {
+                le.setTargetGain(0)
+                le.enabled = false
+                true
+            }.onFailure {
+                Log.w(TAG, "LoudnessEnhancer update failed for session $sessionId", it)
+            }.getOrDefault(false)
+        }
+        // AOSP LoudnessEnhancer has no millibel cap. Try the full target first;
+        // only step down if this device rejects the parameter.
+        val tries = linkedSetOf(gainMb, 2000, 1000).filter { it <= gainMb }
+        for (mb in tries) {
+            val ok = runCatching {
+                le.setTargetGain(mb)
+                le.enabled = true
+                true
+            }.onFailure {
+                Log.w(TAG, "LoudnessEnhancer ${mb}mB failed for session $sessionId", it)
+            }.getOrDefault(false)
+            if (ok) return true
+        }
+        return false
     }
 
     private fun applyEq(settings: BoostSettings, includePreamp: Boolean) {

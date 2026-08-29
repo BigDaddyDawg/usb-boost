@@ -15,7 +15,7 @@ data class MaximizerParams(
     val limiterPostGainDb: Float,
     val loudnessEnhancerMb: Int
 ) {
-    /** Headline gain: 6 dB ≈ 2× level, 9.5 dB ≈ 3×. */
+    /** Headline: vocal/music-band makeup. 19 dB ≈ 9× vs dry, 3× on top of 2.5.0. */
     val displayedDb: Float
         get() = if (useDynamics) midPostGainDb else loudnessEnhancerMb / 100f
 
@@ -23,9 +23,15 @@ data class MaximizerParams(
 }
 
 object BoostLogic {
-    /** 6 dB = 2× amplitude, 9.5 dB ≈ 3×. Car maximizer hits this on the vocal/music band. */
+    /** 6 dB = 2× amplitude, 9.5 dB ≈ 3×. 2.5.0 car max was THREE_X_DB. */
     const val TWO_X_DB = 6f
     const val THREE_X_DB = 9.5f
+    /** Another 2× on top of 2.5.0's +9.5 dB. */
+    const val EXTRA_2X_DB = 15.5f
+    /** Usable extra ~3× vs 2.5.0 (~9× vs dry). Full-slider car target. */
+    const val EXTRA_3X_DB = 19f
+    /** Extra ~6× vs 2.5.0 if a device can take it (~18× vs dry). */
+    const val EXTRA_6X_DB = 25.1f
 
     fun millibels(percent: Int): Int {
         return ((percent.coerceIn(0, 100) / 100f) * BoostSettings.MAX_BOOST_DB * 100f).toInt()
@@ -42,18 +48,19 @@ object BoostLogic {
 
     /**
      * LoudnessEnhancer target when DynamicsProcessing is missing.
-     * Matches the 2–3× car target so fallback is still a real jump.
+     * AOSP has no millibel cap — request the same headline as the car maximizer.
      */
     fun loudnessFallbackMb(percent: Int, carActive: Boolean): Int {
         val t = percent.coerceIn(0, 100) / 100f
         if (t <= 0f) return 0
-        val db = if (carActive) THREE_X_DB * t else 8f * t
+        val db = if (carActive) EXTRA_3X_DB * t else 8f * t
         return (db * 100f).toInt()
     }
 
     /**
      * USB/car: upward-loudness maximizer (MBC makeup on mids + limiter).
-     * Peaks stay near 0 dBFS; RMS/vocals come up ~2–3× without scooping mids.
+     * Peaks stay near 0 dBFS; full slider is another ~3× vs 2.5.0 (~9× vs dry).
+     * Input drive + stronger MBC lift RMS toward ~6× extra on dynamic tracks.
      * Phone speaker: LoudnessEnhancer only, so pockets do not get the car treatment.
      */
     fun maximizerParams(percent: Int, carActive: Boolean): MaximizerParams {
@@ -90,15 +97,15 @@ object BoostLogic {
         }
         return MaximizerParams(
             useDynamics = true,
-            inputGainDb = 2.5f * t,
-            presenceDb = 1.5f * t,
-            bassPostGainDb = TWO_X_DB * t,
-            midPostGainDb = THREE_X_DB * t,
-            highPostGainDb = 6.5f * t,
-            mbcRatio = 1.6f + 0.8f * t,
-            mbcThresholdDb = -14f - 6f * t,
+            inputGainDb = 6.5f * t,
+            presenceDb = 2.6f * t,
+            bassPostGainDb = 11.5f * t,
+            midPostGainDb = EXTRA_3X_DB * t,
+            highPostGainDb = 14.5f * t,
+            mbcRatio = 1.8f + 1.6f * t,
+            mbcThresholdDb = -16f - 12f * t,
             limiterThresholdDb = -0.3f,
-            limiterPostGainDb = 1f * t,
+            limiterPostGainDb = 2.2f * t,
             loudnessEnhancerMb = 0
         )
     }

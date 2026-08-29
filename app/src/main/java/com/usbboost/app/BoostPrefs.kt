@@ -40,7 +40,7 @@ data class BoostSettings(
     }
 
     companion object {
-        const val MAX_BOOST_DB = 9.5f
+        const val MAX_BOOST_DB = 19f
     }
 }
 

@@ -11,15 +11,29 @@ android {
         applicationId = "com.usbboost.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 16
-        versionName = "2.5.0"
+        versionCode = 17
+        versionName = "2.6.0"
+    }
+
+    signingConfigs {
+        create("stable") {
+            storeFile = file("usb-boost.p12")
+            storePassword = "usbboost"
+            keyAlias = "usbboost"
+            keyPassword = "usbboost"
+            storeType = "PKCS12"
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Sideload-friendly: sign release builds so the APK installs on the phone.
-            signingConfig = signingConfigs.getByName("debug")
+            // Same key every CI run so Check for update can overwrite the installed app.
+            signingConfig = if (file("usb-boost.p12").exists()) {
+                signingConfigs.getByName("stable")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

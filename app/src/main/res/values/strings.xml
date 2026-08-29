@@ -42,7 +42,7 @@
     <string name="hint_pause_play">Tap Lock onto Spotify so the sound can jump.</string>
     <string name="hint_need_music">Start Spotify, then tap Lock onto Spotify.</string>
     <string name="hint_phone_boosting">Speaker. Drag down if it crackles — the car can take more.</string>
-    <string name="hint_usb">USB / car. Boost is about 2–3× louder (clear, not crushed). The car\'s USB input is still quieter than FM, so the radio volume stays higher.</string>
+    <string name="hint_usb">USB / car. Boost is about another 3× on top of the last version (clear, not crushed). The car\'s USB input is still quieter than FM, so the radio volume stays higher.</string>
     <string name="hint_bluetooth">Bluetooth. Boost is on if this is the car.</string>
     <string name="hint_phone">On the phone speaker.</string>
     <string name="check_update">Check for update</string>
@@ -51,6 +51,10 @@
     <string name="update_found">Update %1$s is ready. Tap again to install.</string>
     <string name="update_downloading">Downloading…</string>
     <string name="update_failed">Could not check or download. Try again on Wi‑Fi.</string>
-    <string name="update_allow_install">Allow USB Boost to install updates, then tap Check for update again.</string>
+    <string name="update_check_failed">Could not reach the update. Try again on Wi‑Fi.</string>
+    <string name="update_download_failed">Download failed. Try again on Wi‑Fi.</string>
+    <string name="update_install_failed">Could not open the installer. Try again, or allow USB Boost to install apps.</string>
+    <string name="update_signature">Android blocked the update (different signing key). Uninstall USB Boost, then open Downloads and tap the APK. After that, Check for update will work.</string>
+    <string name="update_allow_install">Allow USB Boost to install updates. Come back here — it will continue.</string>
     <string name="qs_hint">Add the USB Boost tile in Quick Settings for a one-tap toggle.</string>
 </resources>

@@ -10,10 +10,10 @@
     <string name="boost_searching">Boost on — waiting to lock onto Spotify</string>
     <string name="auto_car_mode">Only when USB / car is connected</string>
     <string name="boost_level_label">Boost level</string>
-    <string name="boost_level_hint">Play music, tap Turn on. If volume does not jump, pause Spotify and press play.</string>
+    <string name="boost_level_hint">Play music, tap Turn on. If it crackles, drag Boost level down. Pause and press play if it has not locked on.</string>
+    <string name="hint_phone_boosting">Boosting the phone speaker. If it sounds harsh, turn Boost level down — the car can take more than the speaker.</string>
     <string name="boost_waiting_car">Boost on — waiting for USB / car</string>
     <string name="hint_waiting_car">Boost is on, but “Only when USB / car is connected” is enabled, so it will not change the phone speaker. Turn that switch off to test at home.</string>
-    <string name="hint_phone_boosting">Boosting the phone speaker. Drag the slider — volume should jump.</string>
     <string name="hint_pause_play">Spotify is playing, but boost is not attached yet. Pause, then press play — that is how Android hands over the sound.</string>
     <string name="hint_need_music">Play Spotify (or YouTube Music), then pause and press play so boost can lock on.</string>
     <string name="boost_value">%1$d%%  (+ %2$.1f dB)</string>

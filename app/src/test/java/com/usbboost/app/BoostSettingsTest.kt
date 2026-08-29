@@ -54,22 +54,15 @@ class BoostSettingsTest {
     }
 
     @Test
-    fun eqBandLevelBoostsFromUnityInsteadOfCutting() {
+    fun eqBandMillibelsFollowsTheBoostSliderOnEveryBand() {
         val min: Short = -1500
         val max: Short = 1500
-        assertEquals(0, BoostLogic.bandLevelMillibels(0f, min, max).toInt())
-        assertEquals(750, BoostLogic.bandLevelMillibels(0.5f, min, max).toInt())
-        assertEquals(1500, BoostLogic.bandLevelMillibels(1f, min, max).toInt())
-        assertTrue(BoostLogic.bandLevelMillibels(0.35f, min, max) > 0)
-    }
-
-    @Test
-    fun eqBassDoesNotTouchMidsAndHighs() {
-        assertEquals(0f, BoostLogic.eqBassGainFraction(1000f, bassPercent = 80), 0.01f)
-        assertEquals(0f, BoostLogic.eqBassGainFraction(8000f, bassPercent = 100), 0.01f)
-        assertEquals(1f, BoostLogic.eqBassGainFraction(80f, bassPercent = 100), 0.01f)
-        assertTrue(BoostLogic.eqBassGainFraction(200f, bassPercent = 100) > 0f)
-        assertTrue(BoostLogic.eqBassGainFraction(200f, bassPercent = 100) < 1f)
+        assertEquals(0, BoostLogic.eqBandMillibels(1000f, 0, 0, min, max).toInt())
+        assertEquals(780, BoostLogic.eqBandMillibels(1000f, 65, 0, min, max).toInt())
+        assertEquals(1200, BoostLogic.eqBandMillibels(8000f, 100, 0, min, max).toInt())
+        assertEquals(780, BoostLogic.eqBandMillibels(80f, 65, 0, min, max).toInt())
+        assertTrue(BoostLogic.eqBandMillibels(80f, 65, 50, min, max) > 780)
+        assertEquals(1500, BoostLogic.eqBandMillibels(80f, 100, 100, min, max).toInt())
     }
 
     @Test

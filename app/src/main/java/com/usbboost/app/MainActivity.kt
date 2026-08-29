@@ -165,16 +165,4 @@ class MainActivity : AppCompatActivity() {
         )
         binding.textBassValue.text = getString(R.string.percent_value, settings.bassPercent)
     }
-
-    private fun refreshStatus() {
-        val output = OutputMonitor.current(this)
-        val on = prefs.load().enabled
-        binding.textOutput.text = getString(R.string.output_label, output.label)
-        binding.textHint.text = when {
-            !on -> getString(R.string.hint_off)
-            output.kind == OutputKind.USB -> getString(R.string.hint_usb)
-            output.kind == OutputKind.BLUETOOTH -> getString(R.string.hint_bluetooth)
-            else -> getString(R.string.hint_phone)
-        }
-    }
 }

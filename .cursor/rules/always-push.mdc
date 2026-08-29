@@ -1,0 +1,13 @@
+---
+description: Push after a successful commit instead of leaving work only local
+alwaysApply: true
+---
+
+# Always push after commit
+
+After a successful commit you were asked to make, or when shipping a completed fix, push to the tracked remote (`git push -u origin HEAD`).
+
+- Never force-push `main` or `master`.
+- Do not push broken, secret-laden, or incomplete work.
+- Do not skip hooks. Do not amend a pushed commit.
+- If push fails on auth, report the exact error; do not claim it succeeded.

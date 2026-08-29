@@ -13,14 +13,16 @@ data class BoostSettings(
     val homeBoost: Int = 65,
     val homePreset: SoundPreset = SoundPreset.FLAT,
     val homeEq: EqBands = EqBands(),
-    val carBoost: Int = 80,
+    val carBoost: Int = 100,
     val carPreset: SoundPreset = SoundPreset.FLAT,
     val carEq: EqBands = EqBands(),
     val legacyMode: Boolean = true,
     val enhancedDetection: Boolean = true,
     val startOnBoot: Boolean = true
 ) {
-    fun boostDecibels(): Float = (boostPercent / 100f) * MAX_BOOST_DB
+    fun boostDecibels(): Float = BoostLogic.boostDecibels(boostPercent)
+
+    fun appliedDecibels(car: Boolean): Float = BoostLogic.appliedDecibels(boostPercent, car)
 
     fun resolvedEq(): EqBands =
         if (preset == SoundPreset.CUSTOM) eq.coerced() else EqShapes.forPreset(preset)
@@ -38,7 +40,7 @@ data class BoostSettings(
     }
 
     companion object {
-        const val MAX_BOOST_DB = 12f
+        const val MAX_BOOST_DB = 9.5f
     }
 }
 
@@ -59,7 +61,7 @@ class BoostPrefs(private val context: Context) {
             homeBoost = prefs.getInt(KEY_HOME_BOOST, prefs.getInt(KEY_BOOST, 65)).coerceIn(0, 100),
             homePreset = SoundPreset.fromKey(prefs.getString(KEY_HOME_PRESET, preset.name) ?: preset.name),
             homeEq = loadEq("home_"),
-            carBoost = prefs.getInt(KEY_CAR_BOOST, 80).coerceIn(0, 100),
+            carBoost = prefs.getInt(KEY_CAR_BOOST, 100).coerceIn(0, 100),
             carPreset = SoundPreset.fromKey(prefs.getString(KEY_CAR_PRESET, SoundPreset.FLAT.name) ?: SoundPreset.FLAT.name),
             carEq = loadEq("car_"),
             legacyMode = prefs.getBoolean(KEY_LEGACY, true),
@@ -149,6 +151,17 @@ class BoostPrefs(private val context: Context) {
             )
             prefs.edit().putBoolean(KEY_V15_EQ, true).apply()
         }
+        if (!prefs.getBoolean(KEY_V16_LOUD, false)) {
+            val current = load()
+            val inCar = OutputWatcher.carActive(context)
+            save(
+                current.copy(
+                    carBoost = 100,
+                    boostPercent = if (inCar) 100 else current.boostPercent
+                )
+            )
+            prefs.edit().putBoolean(KEY_V16_LOUD, true).apply()
+        }
         save(
             load().copy(
                 legacyMode = true,
@@ -181,5 +194,6 @@ class BoostPrefs(private val context: Context) {
         private const val KEY_V13_SPEAKER = "v13_boost_on_speaker"
         private const val KEY_V14_CLEAN_GAIN = "v14_clean_eq_gain"
         private const val KEY_V15_EQ = "v15_eq_presets"
+        private const val KEY_V16_LOUD = "v16_loudness_maximizer"
     }
 }

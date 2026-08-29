@@ -107,7 +107,10 @@ class BoostService : Service() {
         val text = when {
             !settings.enabled && settings.autoOnUsb -> getString(R.string.status_waiting)
             !settings.enabled -> getString(R.string.status_off)
-            attach.lockedOn -> getString(R.string.status_on_simple, settings.boostDecibels())
+            attach.lockedOn -> getString(
+                R.string.status_on_simple,
+                settings.appliedDecibels(OutputWatcher.carActive(this))
+            )
             else -> getString(R.string.boost_searching)
         }
 

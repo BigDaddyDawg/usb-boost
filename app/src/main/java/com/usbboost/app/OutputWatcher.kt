@@ -31,17 +31,18 @@ object OutputWatcher {
             runCatching { am?.registerAudioDeviceCallback(callback, mainHandler) }
             started = true
         }
+        val car = carActive(app)
         if (lastCar == null) {
-            lastCar = carActive(app)
+            lastCar = car
+            MediaVolume.sync(app, car)
+            return
+        }
+        if (car != lastCar) {
+            handleChange()
         }
     }
 
-    fun carActive(context: Context): Boolean {
-        val output = OutputMonitor.current(context)
-        return output.carLikely ||
-            output.kind == OutputKind.USB ||
-            OutputMonitor.usbCableConnected(context)
-    }
+    fun carActive(context: Context): Boolean = OutputMonitor.current(context).carLikely
 
     private fun handleChange() {
         val context = appContext ?: return
@@ -49,10 +50,12 @@ object OutputWatcher {
         val previous = lastCar
         if (previous == null) {
             lastCar = car
+            MediaVolume.sync(context, car)
             return
         }
         if (car == previous) return
         lastCar = car
+        MediaVolume.sync(context, car)
 
         val prefs = BoostPrefs(context)
         var settings = prefs.load().writeBack(!car).applyProfile(car)
@@ -68,6 +71,40 @@ object OutputWatcher {
             BoostService.startSafely(context)
         } else {
             BoostService.stop(context)
+        }
+    }
+}
+
+/**
+ * USB DACs often honour STREAM_MUSIC. Raise it to max while the car is connected
+ * so the digital output is as hot as Android allows, then restore.
+ */
+object MediaVolume {
+    @Volatile
+    private var savedVolume: Int? = null
+
+    fun sync(context: Context, car: Boolean) {
+        val am = context.getSystemService(AudioManager::class.java) ?: return
+        if (am.isVolumeFixed) return
+        val stream = AudioManager.STREAM_MUSIC
+        runCatching {
+            if (car) {
+                if (savedVolume == null) {
+                    savedVolume = am.getStreamVolume(stream)
+                }
+                val max = am.getStreamMaxVolume(stream)
+                if (am.getStreamVolume(stream) < max) {
+                    am.setStreamVolume(stream, max, 0)
+                }
+            } else {
+                val restore = savedVolume ?: return
+                savedVolume = null
+                am.setStreamVolume(
+                    stream,
+                    restore.coerceIn(0, am.getStreamMaxVolume(stream)),
+                    0
+                )
+            }
         }
     }
 }

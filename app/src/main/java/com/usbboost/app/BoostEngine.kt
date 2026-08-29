@@ -70,10 +70,7 @@ object BoostEngine {
     private fun applyToSessions(context: Context, sessions: Set<Int>) {
         if (!running.get()) return
         val settings = BoostPrefs(context).load()
-        val output = OutputMonitor.current(context)
-        val carActive = output.carLikely ||
-            output.kind == OutputKind.USB ||
-            OutputMonitor.usbCableConnected(context)
+        val carActive = OutputWatcher.carActive(context)
         val applying = BoostLogic.shouldApplyEffects(settings.enabled, settings.autoCarMode, carActive)
         val trusted = SessionRegistry.snapshot()
         val targets = BoostLogic.sessionsToProcess(sessions + trusted, settings.legacyMode)

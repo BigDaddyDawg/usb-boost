@@ -17,19 +17,47 @@ class BoostSettingsTest {
     }
 
     @Test
-    fun boostDecibelsScalesToTwelveAtFull() {
+    fun boostDecibelsScaleWithMax() {
         assertEquals(0f, BoostSettings(boostPercent = 0).boostDecibels(), 0.01f)
-        assertEquals(6f, BoostSettings(boostPercent = 50).boostDecibels(), 0.01f)
-        assertEquals(12f, BoostSettings(boostPercent = 100).boostDecibels(), 0.01f)
+        assertEquals(4.75f, BoostSettings(boostPercent = 50).boostDecibels(), 0.01f)
+        assertEquals(9.5f, BoostSettings(boostPercent = 100).boostDecibels(), 0.01f)
     }
 
     @Test
     fun millibelsMatchSliderDecibels() {
         assertEquals(0, BoostLogic.millibels(0))
-        assertEquals(600, BoostLogic.millibels(50))
-        assertEquals(1200, BoostLogic.millibels(100))
-        assertEquals(1200, BoostLogic.millibels(999))
+        assertEquals(475, BoostLogic.millibels(50))
+        assertEquals(950, BoostLogic.millibels(100))
+        assertEquals(950, BoostLogic.millibels(999))
         assertEquals(0, BoostLogic.millibels(-10))
+    }
+
+    @Test
+    fun carMaximizerHitsTwoToThreeTimesLevel() {
+        assertEquals(2f, BoostLogic.amplitudeMultiplier(BoostLogic.TWO_X_DB), 0.02f)
+        assertEquals(3f, BoostLogic.amplitudeMultiplier(BoostLogic.THREE_X_DB), 0.05f)
+
+        val off = BoostLogic.maximizerParams(0, carActive = true)
+        assertEquals(0f, off.displayedDb, 0.01f)
+        assertFalse(off.useDynamics)
+
+        val twice = BoostLogic.maximizerParams(63, carActive = true)
+        assertEquals(6f, twice.midPostGainDb, 0.2f)
+        assertEquals(2f, BoostLogic.amplitudeMultiplier(twice.midPostGainDb), 0.08f)
+
+        val full = BoostLogic.maximizerParams(100, carActive = true)
+        assertTrue(full.useDynamics)
+        assertEquals(9.5f, full.midPostGainDb, 0.01f)
+        assertEquals(9.5f, full.displayedDb, 0.01f)
+        assertEquals(3f, BoostLogic.amplitudeMultiplier(full.midPostGainDb), 0.05f)
+        assertTrue(full.midPostGainDb > full.bassPostGainDb)
+        assertTrue(full.mbcRatio <= 2.5f)
+        assertEquals(0, full.loudnessEnhancerMb)
+        assertEquals(950, BoostLogic.loudnessFallbackMb(100, carActive = true))
+
+        val home = BoostLogic.maximizerParams(100, carActive = false)
+        assertFalse(home.useDynamics)
+        assertEquals(8f, home.displayedDb, 0.01f)
     }
 
     @Test
@@ -56,16 +84,19 @@ class BoostSettingsTest {
     }
 
     @Test
-    fun eqBandMillibelsFollowsBoostAndToneShape() {
+    fun eqBandsAreToneOnlySoBoostCannotClipTheUsbDac() {
         val min: Short = -1500
         val max: Short = 1500
         val flat = EqBands()
-        assertEquals(0, BoostLogic.eqBandMillibels(1000f, 0, flat, min, max).toInt())
-        assertEquals(780, BoostLogic.eqBandMillibels(1000f, 65, flat, min, max).toInt())
-        assertEquals(1200, BoostLogic.eqBandMillibels(8000f, 100, flat, min, max).toInt())
+        assertEquals(0, BoostLogic.eqBandMillibels(1000f, flat, min, max).toInt())
+        assertEquals(0, BoostLogic.eqBandMillibels(8000f, flat, min, max).toInt())
         val bassHeavy = EqBands(bass = 6)
-        assertTrue(BoostLogic.eqBandMillibels(80f, 65, bassHeavy, min, max) > 780)
-        assertEquals(780, BoostLogic.eqBandMillibels(3000f, 65, bassHeavy, min, max).toInt())
+        assertEquals(600, BoostLogic.eqBandMillibels(80f, bassHeavy, min, max).toInt())
+        assertEquals(0, BoostLogic.eqBandMillibels(3000f, bassHeavy, min, max).toInt())
+        assertEquals(
+            950,
+            BoostLogic.eqBandMillibelsWithPreamp(1000f, 100, flat, min, max).toInt()
+        )
     }
 
     @Test
@@ -97,8 +128,10 @@ class BoostSettingsTest {
     @Test
     fun boostDecibelsMatchTheSlider() {
         assertEquals(0f, BoostLogic.boostDecibels(0), 0.01f)
-        assertEquals(7.8f, BoostLogic.boostDecibels(65), 0.01f)
-        assertEquals(12f, BoostLogic.boostDecibels(100), 0.01f)
+        assertEquals(6.175f, BoostLogic.boostDecibels(65), 0.01f)
+        assertEquals(9.5f, BoostLogic.boostDecibels(100), 0.01f)
+        assertEquals(9.5f, BoostLogic.appliedDecibels(100, carActive = true), 0.01f)
+        assertEquals(8f, BoostLogic.appliedDecibels(100, carActive = false), 0.01f)
     }
 
     @Test

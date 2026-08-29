@@ -42,7 +42,7 @@
     <string name="hint_pause_play">Tap Lock onto Spotify so the sound can jump.</string>
     <string name="hint_need_music">Start Spotify, then tap Lock onto Spotify.</string>
     <string name="hint_phone_boosting">Speaker. Drag down if it crackles — the car can take more.</string>
-    <string name="hint_usb">USB / Android Auto. Boost is on.</string>
+    <string name="hint_usb">USB / car. Boost is about 2–3× louder (clear, not crushed). The car\'s USB input is still quieter than FM, so the radio volume stays higher.</string>
     <string name="hint_bluetooth">Bluetooth. Boost is on if this is the car.</string>
     <string name="hint_phone">On the phone speaker.</string>
     <string name="check_update">Check for update</string>

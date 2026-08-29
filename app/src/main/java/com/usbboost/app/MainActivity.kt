@@ -325,7 +325,7 @@ class MainActivity : AppCompatActivity() {
         binding.textHint.text = when {
             !settings.enabled -> getString(R.string.hint_off)
             !applying -> getString(R.string.hint_waiting_car)
-            attach.lockedOn && output.kind == OutputKind.USB -> getString(R.string.hint_usb)
+            attach.lockedOn && (output.kind == OutputKind.USB || car) -> getString(R.string.hint_usb)
             attach.lockedOn && output.kind == OutputKind.BLUETOOTH -> getString(R.string.hint_bluetooth)
             attach.lockedOn -> getString(R.string.hint_phone_boosting)
             attach.musicPlaying || SessionTracker.musicPlaying(this) -> getString(R.string.hint_pause_play)
@@ -351,7 +351,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateValueLabels(settings: BoostSettings) {
-        binding.textBoostValue.text = getString(R.string.boost_value, settings.boostDecibels())
+        binding.textBoostValue.text = getString(
+            R.string.boost_value,
+            settings.appliedDecibels(OutputWatcher.carActive(this))
+        )
         updateEqLabels(settings.resolvedEq())
     }
 

@@ -10,16 +10,16 @@ class EffectChain(private val sessionId: Int) {
     private var loudness: LoudnessEnhancer? = null
     private var bassBoost: BassBoost? = null
 
-    fun apply(settings: BoostSettings, carActive: Boolean) {
+    fun apply(settings: BoostSettings, carActive: Boolean): Boolean {
         if (!settings.enabled) {
             release()
-            return
+            return false
         }
 
         val active = BoostLogic.shouldApplyEffects(settings.enabled, settings.autoCarMode, carActive)
         if (!active) {
             release()
-            return
+            return false
         }
 
         ensureEffects()
@@ -27,19 +27,27 @@ class EffectChain(private val sessionId: Int) {
         val bassStrength = BoostLogic.bassStrength(settings.bassPercent)
 
         runCatching {
-            loudness?.setTargetGain(boostMb)
-            loudness?.enabled = boostMb > 0
+            val fx = loudness ?: return@runCatching
+            fx.setTargetGain(boostMb)
+            fx.enabled = boostMb > 0
         }.onFailure { Log.w(TAG, "Loudness update failed for session $sessionId", it) }
 
         runCatching {
-            bassBoost?.setStrength(bassStrength.toShort())
-            bassBoost?.enabled = bassStrength > 0
+            val fx = bassBoost ?: return@runCatching
+            fx.setStrength(bassStrength.toShort())
+            fx.enabled = bassStrength > 0
         }.onFailure { Log.w(TAG, "Bass update failed for session $sessionId", it) }
 
-        applyCarEq(settings)
+        applyEq(settings)
+        return isAttached()
     }
 
-    private fun applyCarEq(settings: BoostSettings) {
+    fun isAttached(): Boolean {
+        if (sessionId <= 0) return false
+        return loudness?.enabled == true || equalizer?.enabled == true || bassBoost?.enabled == true
+    }
+
+    private fun applyEq(settings: BoostSettings) {
         val eq = equalizer ?: return
         val bands = eq.numberOfBands.toInt()
         if (bands <= 0) return
@@ -47,41 +55,39 @@ class EffectChain(private val sessionId: Int) {
         val range = eq.bandLevelRange
         val min = range[0]
         val max = range[1]
-        val span = (max - min).toFloat()
 
         for (band in 0 until bands) {
             runCatching {
                 val center = eq.getCenterFreq(band.toShort()) / 1000f
-                val gain = when {
-                    center < 120f -> settings.bassPercent / 100f * 0.85f
-                    center < 350f -> settings.bassPercent / 100f * 0.45f
-                    center in 800f..3500f -> settings.boostPercent / 100f * 0.35f
-                    center > 9000f -> settings.boostPercent / 100f * 0.15f
-                    else -> 0.12f
-                }
-                val level = (min + span * gain).toInt().toShort()
-                eq.setBandLevel(band.toShort(), level)
+                val gain = BoostLogic.eqGainFraction(center, settings.boostPercent, settings.bassPercent)
+                eq.setBandLevel(band.toShort(), BoostLogic.bandLevelMillibels(gain, min, max))
             }
         }
-        eq.enabled = true
+        eq.enabled = settings.boostPercent > 0 || settings.bassPercent > 0
     }
 
     private fun ensureEffects() {
         if (equalizer == null) {
-            equalizer = runCatching { Equalizer(0, sessionId) }
-                .getOrNull()
-                ?.also { it.enabled = true }
+            equalizer = createEffect("Equalizer") {
+                Equalizer(PRIORITY, sessionId).also { it.enabled = true }
+            }
         }
         if (loudness == null) {
-            loudness = runCatching { LoudnessEnhancer(sessionId) }
-                .getOrNull()
-                ?.also { it.enabled = true }
+            loudness = createEffect("LoudnessEnhancer") {
+                LoudnessEnhancer(sessionId).also { it.enabled = true }
+            }
         }
         if (bassBoost == null) {
-            bassBoost = runCatching { BassBoost(0, sessionId) }
-                .getOrNull()
-                ?.also { it.enabled = true }
+            bassBoost = createEffect("BassBoost") {
+                BassBoost(PRIORITY, sessionId).also { it.enabled = true }
+            }
         }
+    }
+
+    private fun <T> createEffect(name: String, factory: () -> T): T? {
+        return runCatching { factory() }
+            .onFailure { Log.w(TAG, "$name failed for session $sessionId", it) }
+            .getOrNull()
     }
 
     fun release() {
@@ -98,5 +104,6 @@ class EffectChain(private val sessionId: Int) {
 
     companion object {
         private const val TAG = "EffectChain"
+        private const val PRIORITY = 100
     }
 }

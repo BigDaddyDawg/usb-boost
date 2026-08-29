@@ -25,7 +25,10 @@ Same link every time (the APK on that page is replaced when we ship a fix):
 
 1. Download **`app-release.apk`**
 2. Open **USB Boost** → **Turn on** (allow notifications if asked)
-3. Play music and drag **Boost level**
+3. Play Spotify, then **pause and press play** if the volume does not jump
+4. Drag **Boost level** until it sounds right
+
+Android only hands another app’s sound over when playback starts. If Spotify was already playing, pause/play once so boost can lock on.
 
 That's it. No PC, no ADB, no extra buttons.
 

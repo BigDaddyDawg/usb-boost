@@ -58,7 +58,8 @@ jobs:
 
             1. Uninstall an older USB Boost if it was crashing
             2. Install app-release.apk
-            3. Open USB Boost, tap Turn on, play music, drag Boost level
+            3. Open USB Boost, tap Turn on, play music
+            4. If volume does not jump, pause Spotify and press play, then drag Boost level
           files: app/build/outputs/apk/release/app-release.apk
           overwrite_files: true
           make_latest: true

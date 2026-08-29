@@ -1,6 +1,7 @@
 package com.usbboost.app
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.AudioPlaybackConfiguration
 import android.os.Handler
@@ -8,6 +9,7 @@ import android.os.Looper
 import android.util.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 
 class SessionTracker(
     private val context: Context,
@@ -36,6 +38,7 @@ class SessionTracker(
         val am = audioManager ?: return
         runCatching { am.unregisterAudioPlaybackCallback(playbackCallback) }
         runCatching { am.registerAudioPlaybackCallback(playbackCallback, mainHandler) }
+        knownSessions.addAll(SessionRegistry.snapshot())
         schedulePoll()
         refresh(settings)
     }
@@ -51,12 +54,13 @@ class SessionTracker(
 
     fun refresh(settings: BoostSettings) {
         if (stopped) return
-        runCatching {
+        try {
             executor.execute {
                 if (stopped) return@execute
                 val discovered = linkedSetOf<Int>()
+                discovered.addAll(SessionRegistry.snapshot())
                 discovered.addAll(readActiveSessionsViaCallback())
-                if (settings.enhancedDetection && OutputMonitor.hasDumpPermission(context)) {
+                if (settings.enhancedDetection) {
                     discovered.addAll(readSessionsFromDump())
                 }
                 if (settings.legacyMode) {
@@ -75,40 +79,53 @@ class SessionTracker(
                     notifyChange()
                 }
             }
+        } catch (_: RejectedExecutionException) {
+            Log.w(TAG, "Session refresh skipped; tracker is stopping")
         }
     }
 
     fun activeSessions(): Set<Int> = knownSessions.toSet()
 
+    fun remember(sessionId: Int) {
+        if (sessionId <= 0) return
+        if (knownSessions.add(sessionId)) notifyChange()
+    }
+
+    fun forget(sessionId: Int) {
+        if (knownSessions.remove(sessionId)) notifyChange()
+    }
+
     private fun readActiveSessionsViaCallback(): Set<Int> {
         val am = audioManager ?: return emptySet()
         return runCatching {
-            val method = AudioManager::class.java.getMethod("getActivePlaybackConfigurations")
-            @Suppress("UNCHECKED_CAST")
-            val configs = method.invoke(am) as List<AudioPlaybackConfiguration>
-            configs.mapNotNull { extractSessionId(it) }.toSet()
+            am.activePlaybackConfigurations.mapNotNull { extractSessionId(it) }.toSet()
         }.getOrElse { emptySet() }
     }
 
     private fun readSessionsFromDump(): Set<Int> {
-        return runCatching {
-            val process = Runtime.getRuntime().exec(arrayOf("dumpsys", "media.audio_flinger"))
-            val output = process.inputStream.bufferedReader().use { it.readText() }
-            process.waitFor()
-            SESSION_REGEX.findAll(output)
-                .map { it.groupValues[1].toInt() }
-                .toSet()
-        }.getOrElse {
-            Log.w(TAG, "Enhanced session detection failed", it)
-            emptySet()
+        val ids = linkedSetOf<Int>()
+        DUMP_COMMANDS.forEach { command ->
+            runCatching {
+                val process = Runtime.getRuntime().exec(command)
+                val output = process.inputStream.bufferedReader().use { it.readText() }
+                if (!process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)) {
+                    process.destroy()
+                }
+                ids.addAll(SessionIds.fromDump(output))
+            }.onFailure {
+                Log.w(TAG, "Session dump failed for ${command.joinToString(" ")}", it)
+            }
         }
+        return ids
     }
 
     private fun extractSessionId(config: AudioPlaybackConfiguration): Int? {
+        SessionIds.fromPlaybackToString(config.toString())?.let { return it }
         return runCatching {
-            val method = AudioPlaybackConfiguration::class.java.getMethod("getSessionId")
+            val method = AudioPlaybackConfiguration::class.java.getDeclaredMethod("getSessionId")
+            method.isAccessible = true
             val id = method.invoke(config) as Int
-            if (id > 0) id else null
+            id.takeIf { it > 0 }
         }.getOrNull()
     }
 
@@ -130,7 +147,7 @@ class SessionTracker(
             }
         }
         pollRunnable = runnable
-        mainHandler.postDelayed(runnable, POLL_INTERVAL_MS)
+        mainHandler.post(runnable)
     }
 
     private fun notifyChange() {
@@ -139,7 +156,20 @@ class SessionTracker(
 
     companion object {
         private const val TAG = "SessionTracker"
-        private const val POLL_INTERVAL_MS = 2500L
-        private val SESSION_REGEX = Regex("session\\s+(\\d+)", RegexOption.IGNORE_CASE)
+        private const val POLL_INTERVAL_MS = 1500L
+        private val DUMP_COMMANDS = listOf(
+            arrayOf("dumpsys", "media.audio_flinger"),
+            arrayOf("dumpsys", "audio")
+        )
+
+        fun musicPlaying(context: Context): Boolean {
+            val am = context.getSystemService(AudioManager::class.java) ?: return false
+            return runCatching {
+                am.activePlaybackConfigurations.any { config ->
+                    val usage = config.audioAttributes.usage
+                    usage == AudioAttributes.USAGE_MEDIA || usage == AudioAttributes.USAGE_GAME
+                }
+            }.getOrDefault(false)
+        }
     }
 }

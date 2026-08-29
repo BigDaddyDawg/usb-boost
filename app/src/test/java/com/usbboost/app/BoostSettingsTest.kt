@@ -38,9 +38,9 @@ class BoostSettingsTest {
     }
 
     @Test
-    fun legacyModeAlwaysIncludesGlobalSession() {
+    fun legacyModeOnlyUsesGlobalSessionWhenNothingRealWasFound() {
         assertEquals(setOf(0), BoostLogic.sessionsToProcess(emptySet(), legacyMode = true))
-        assertEquals(setOf(0, 12), BoostLogic.sessionsToProcess(setOf(12), legacyMode = true))
+        assertEquals(setOf(12), BoostLogic.sessionsToProcess(setOf(12), legacyMode = true))
         assertEquals(setOf(12), BoostLogic.sessionsToProcess(setOf(12), legacyMode = false))
         assertTrue(BoostLogic.sessionsToProcess(emptySet(), legacyMode = false).isEmpty())
     }
@@ -51,5 +51,50 @@ class BoostSettingsTest {
         assertFalse(BoostLogic.shouldApplyEffects(enabled = true, autoCarMode = true, carActive = false))
         assertTrue(BoostLogic.shouldApplyEffects(enabled = true, autoCarMode = true, carActive = true))
         assertTrue(BoostLogic.shouldApplyEffects(enabled = true, autoCarMode = false, carActive = false))
+    }
+
+    @Test
+    fun eqBandLevelBoostsFromUnityInsteadOfCutting() {
+        val min: Short = -1500
+        val max: Short = 1500
+        assertEquals(0, BoostLogic.bandLevelMillibels(0f, min, max).toInt())
+        assertEquals(750, BoostLogic.bandLevelMillibels(0.5f, min, max).toInt())
+        assertEquals(1500, BoostLogic.bandLevelMillibels(1f, min, max).toInt())
+        assertTrue(BoostLogic.bandLevelMillibels(0.35f, min, max) > 0)
+    }
+
+    @Test
+    fun eqGainUsesBoostAsPreampAndBassOnLows() {
+        assertEquals(0.65f, BoostLogic.eqGainFraction(1000f, boostPercent = 65, bassPercent = 0), 0.01f)
+        assertTrue(BoostLogic.eqGainFraction(80f, boostPercent = 50, bassPercent = 100) > 0.5f)
+        assertEquals(0f, BoostLogic.eqGainFraction(1000f, boostPercent = 0, bassPercent = 0), 0.01f)
+    }
+
+    @Test
+    fun dumpParserFindsRealSessionsAndIgnoresZeroAndPermissionDenied() {
+        val dump = """
+            Output thread 0xb400007a:
+              Track id 5:
+                session  847
+              Track id 6:
+                session id: 0
+            AudioPlaybackConfiguration piid:12 sessionId:1901 state:started
+        """.trimIndent()
+        assertEquals(setOf(847, 1901), SessionIds.fromDump(dump))
+        assertTrue(SessionIds.fromDump("Permission Denial: can't dump media.audio_flinger").isEmpty())
+        assertEquals(1901, SessionIds.fromPlaybackToString("AudioPlaybackConfiguration piid:12 sessionId:1901 state:started"))
+        assertEquals(null, SessionIds.fromPlaybackToString("AudioPlaybackConfiguration piid:12 sessionId:0 state:started"))
+    }
+
+    @Test
+    fun sessionZeroIsNotARealAttachTarget() {
+        assertFalse(BoostLogic.isRealSession(0))
+        assertTrue(BoostLogic.isRealSession(847))
+    }
+
+    @Test
+    fun attachStatusLockedOnNeedsARealSession() {
+        assertFalse(AttachStatus(attachedSessions = setOf(0)).lockedOn)
+        assertTrue(AttachStatus(attachedSessions = setOf(847)).lockedOn)
     }
 }

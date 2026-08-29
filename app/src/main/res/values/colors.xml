@@ -1,7 +1,17 @@
 <resources>
-    <color name="purple_500">#6C63FF</color>
-    <color name="purple_700">#4B44CC</color>
-    <color name="teal_200">#03DAC5</color>
+    <color name="bg">#090B10</color>
+    <color name="surface">#141821</color>
+    <color name="surface_high">#1C2230</color>
+    <color name="stroke">#2A3348</color>
+    <color name="lime">#C6FF4A</color>
+    <color name="lime_dim">#6B8F28</color>
+    <color name="amber">#FFB020</color>
+    <color name="text">#F4F6FB</color>
+    <color name="text_muted">#9AA3B5</color>
+    <color name="text_on_lime">#0B0D12</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="purple_500">#C6FF4A</color>
+    <color name="purple_700">#090B10</color>
+    <color name="teal_200">#C6FF4A</color>
 </resources>

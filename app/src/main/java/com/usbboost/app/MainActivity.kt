@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -20,6 +21,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prefs: BoostPrefs
     private var pendingEnable = false
     private var suppressEq = false
+    private var suppressPower = false
     private var pendingUpdate: UpdateInfo? = null
     private val io = Executors.newSingleThreadExecutor()
     private val refreshHandler = Handler(Looper.getMainLooper())
@@ -34,10 +36,14 @@ class MainActivity : AppCompatActivity() {
 
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) {
-        if (pendingEnable) {
-            pendingEnable = false
+    ) { granted ->
+        if (!pendingEnable) return@registerForActivityResult
+        pendingEnable = false
+        if (granted) {
             applyBoostOn()
+        } else {
+            setSwitchChecked(false)
+            syncToggle()
         }
     }
 
@@ -84,10 +90,14 @@ class MainActivity : AppCompatActivity() {
         loadControls(prefs.load())
         syncToggle()
 
-        binding.buttonOn.setOnClickListener { setBoostEnabled(true) }
-        binding.buttonOff.setOnClickListener { setBoostEnabled(false) }
+        binding.switchEnabled.setOnCheckedChangeListener { _, checked ->
+            if (suppressPower) return@setOnCheckedChangeListener
+            setBoostEnabled(checked)
+        }
         binding.buttonLockOn.setOnClickListener { MediaNudge.lockOn(this) }
         binding.buttonUpdate.setOnClickListener { onUpdateClicked() }
+        binding.buttonTone.setOnClickListener { toggleSection(binding.layoutTone, binding.iconTone) }
+        binding.buttonMore.setOnClickListener { toggleSection(binding.layoutMore, binding.iconMore) }
 
         binding.switchAutoCar.setOnCheckedChangeListener { _, _ -> persistAndApply() }
         binding.switchAutoUsb.setOnCheckedChangeListener { _, checked ->
@@ -109,6 +119,9 @@ class MainActivity : AppCompatActivity() {
             suppressEq = true
             applyEqToSliders(eq)
             suppressEq = false
+            if (preset == SoundPreset.CUSTOM) {
+                setSectionOpen(binding.layoutTone, binding.iconTone, true)
+            }
             persistAndApply(preset = preset, eq = eq)
         }
     }
@@ -126,13 +139,16 @@ class MainActivity : AppCompatActivity() {
             suppressEq = true
             binding.chipCustom.isChecked = true
             suppressEq = false
+            setSectionOpen(binding.layoutTone, binding.iconTone, true)
             persistAndApply(preset = SoundPreset.CUSTOM, eq = update(currentEqFromSliders(), value.toInt()))
         }
     }
 
     private fun loadControls(settings: BoostSettings) {
         suppressEq = true
-        binding.switchEnabled.isChecked = settings.enabled
+        if (!pendingEnable) {
+            setSwitchChecked(settings.enabled)
+        }
         binding.switchAutoCar.isChecked = settings.autoCarMode
         binding.switchAutoUsb.isChecked = settings.autoOnUsb
         binding.sliderBoost.value = settings.boostPercent.toFloat()
@@ -146,6 +162,9 @@ class MainActivity : AppCompatActivity() {
             SoundPreset.CUSTOM -> binding.chipCustom.isChecked = true
         }
         suppressEq = false
+        if (settings.preset == SoundPreset.CUSTOM) {
+            setSectionOpen(binding.layoutTone, binding.iconTone, true)
+        }
         updateValueLabels(settings.copy(eq = eq))
     }
 
@@ -202,7 +221,7 @@ class MainActivity : AppCompatActivity() {
             val car = OutputWatcher.carActive(this)
             val updated = currentSettings().copy(enabled = false).writeBack(car)
             prefs.save(updated)
-            binding.switchEnabled.isChecked = false
+            setSwitchChecked(false)
             if (updated.autoOnUsb) {
                 BoostEngine.stop()
                 BoostService.startSafely(this)
@@ -218,7 +237,7 @@ class MainActivity : AppCompatActivity() {
         val car = OutputWatcher.carActive(this)
         val updated = currentSettings().copy(enabled = true).writeBack(car)
         prefs.save(updated)
-        binding.switchEnabled.isChecked = true
+        setSwitchChecked(true)
         runCatching { BoostEngine.start(this) }
         BoostService.startSafely(this)
         syncToggle()
@@ -236,14 +255,63 @@ class MainActivity : AppCompatActivity() {
         val attach = BoostEngine.currentStatus()
         val car = OutputWatcher.carActive(this)
         val applying = BoostLogic.shouldApplyEffects(settings.enabled, settings.autoCarMode, car)
-        binding.buttonOn.isEnabled = !settings.enabled
-        binding.buttonOff.isEnabled = settings.enabled
+        if (!pendingEnable) {
+            setSwitchChecked(settings.enabled)
+        }
+        val live = settings.enabled && applying && attach.lockedOn
+        val waiting = settings.enabled && !live
         binding.textPowerStatus.text = when {
             !settings.enabled -> getString(R.string.boost_is_off)
             !applying -> getString(R.string.boost_waiting_car)
-            attach.lockedOn -> getString(R.string.boost_is_on)
+            live -> getString(R.string.boost_is_on)
             else -> getString(R.string.boost_searching)
         }
+        binding.textPowerStatus.setTextColor(
+            ContextCompat.getColor(
+                this,
+                when {
+                    live -> R.color.text_on_lime
+                    waiting -> R.color.amber
+                    else -> R.color.text_muted
+                }
+            )
+        )
+        binding.textPowerStatus.setBackgroundResource(
+            when {
+                live -> R.drawable.bg_pill_on
+                waiting -> R.drawable.bg_pill_wait
+                else -> R.drawable.bg_pill
+            }
+        )
+        binding.heroCard.setBackgroundResource(
+            when {
+                live -> R.drawable.bg_hero_on
+                waiting -> R.drawable.bg_hero_wait
+                else -> R.drawable.bg_hero_off
+            }
+        )
+        binding.textBoostValue.setTextColor(
+            ContextCompat.getColor(this, if (live) R.color.lime else R.color.text)
+        )
+        binding.buttonLockOn.visibility =
+            if (settings.enabled && applying && !attach.lockedOn) View.VISIBLE else View.GONE
+    }
+
+    private fun setSwitchChecked(checked: Boolean) {
+        if (binding.switchEnabled.isChecked == checked) return
+        suppressPower = true
+        binding.switchEnabled.isChecked = checked
+        suppressPower = false
+    }
+
+    private fun toggleSection(section: View, icon: View) {
+        setSectionOpen(section, icon, section.visibility != View.VISIBLE)
+    }
+
+    private fun setSectionOpen(section: View, icon: View, open: Boolean) {
+        section.visibility = if (open) View.VISIBLE else View.GONE
+        icon.animate().cancel()
+        icon.rotation = if (open) 180f else 0f
     }
 
     private fun refreshStatus() {
@@ -283,11 +351,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateValueLabels(settings: BoostSettings) {
-        binding.textBoostValue.text = getString(
-            R.string.boost_value,
-            settings.boostPercent,
-            settings.boostDecibels()
-        )
+        binding.textBoostValue.text = getString(R.string.boost_value, settings.boostDecibels())
         updateEqLabels(settings.resolvedEq())
     }
 

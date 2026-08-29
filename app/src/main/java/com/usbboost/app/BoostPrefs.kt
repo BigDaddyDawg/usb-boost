@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 
 data class BoostSettings(
     val enabled: Boolean = false,
-    val autoCarMode: Boolean = true,
+    val autoCarMode: Boolean = false,
     val boostPercent: Int = 65,
     val bassPercent: Int = 55,
     val legacyMode: Boolean = true,
@@ -25,7 +25,7 @@ class BoostPrefs(private val context: Context) {
 
     fun load(): BoostSettings = BoostSettings(
         enabled = prefs.getBoolean(KEY_ENABLED, false),
-        autoCarMode = prefs.getBoolean(KEY_AUTO_CAR, true),
+        autoCarMode = prefs.getBoolean(KEY_AUTO_CAR, false),
         boostPercent = prefs.getInt(KEY_BOOST, 65).coerceIn(0, 100),
         bassPercent = prefs.getInt(KEY_BASS, 55).coerceIn(0, 100),
         legacyMode = prefs.getBoolean(KEY_LEGACY, true),
@@ -50,13 +50,21 @@ class BoostPrefs(private val context: Context) {
             save(
                 load().copy(
                     enabled = false,
+                    autoCarMode = false,
                     legacyMode = true,
                     startOnBoot = true,
                     enhancedDetection = true
                 )
             )
-            prefs.edit().putBoolean(KEY_V12_SAFE, true).apply()
+            prefs.edit()
+                .putBoolean(KEY_V12_SAFE, true)
+                .putBoolean(KEY_V13_SPEAKER, true)
+                .apply()
             return
+        }
+        if (!prefs.getBoolean(KEY_V13_SPEAKER, false)) {
+            save(load().copy(autoCarMode = false))
+            prefs.edit().putBoolean(KEY_V13_SPEAKER, true).apply()
         }
         save(
             load().copy(
@@ -84,5 +92,6 @@ class BoostPrefs(private val context: Context) {
         private const val KEY_BOOT = "boot"
         private const val KEY_BATTERY_PROMPT = "battery_prompt"
         private const val KEY_V12_SAFE = "v12_safe_launch"
+        private const val KEY_V13_SPEAKER = "v13_boost_on_speaker"
     }
 }

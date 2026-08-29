@@ -51,11 +51,14 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.2.1
-          name: USB Boost v1.2.1
+          tag_name: v2.1.1
+          name: USB Boost
           body: |
-            QA pass: opens with boost off (no service).
-            Turn on asks for notifications first, then starts boost.
-            Turn off stops it. Safe to install after uninstalling older versions.
+            Always download **app-release.apk** from this page — it is replaced on every update, same link.
+
+            1. Uninstall an older USB Boost if it was crashing
+            2. Install app-release.apk
+            3. Open USB Boost, tap Turn on, play music, drag Boost level
           files: app/build/outputs/apk/release/app-release.apk
+          overwrite_files: true
           make_latest: true

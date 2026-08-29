@@ -11,7 +11,7 @@ class BoostSettingsTest {
         val settings = BoostSettings()
         assertFalse(settings.enabled)
         assertTrue(settings.legacyMode)
-        assertTrue(settings.autoCarMode)
+        assertFalse(settings.autoCarMode)
     }
 
     @Test

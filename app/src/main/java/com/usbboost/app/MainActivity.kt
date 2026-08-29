@@ -111,10 +111,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun syncToggle() {
-        val on = prefs.load().enabled
-        binding.buttonOn.isEnabled = !on
-        binding.buttonOff.isEnabled = on
-        binding.textPowerStatus.text = getString(if (on) R.string.boost_is_on else R.string.boost_is_off)
+        val settings = prefs.load()
+        val output = OutputMonitor.current(this)
+        val applying = BoostLogic.shouldApplyEffects(
+            settings.enabled,
+            settings.autoCarMode,
+            output.carLikely || output.kind == OutputKind.USB
+        )
+        binding.buttonOn.isEnabled = !settings.enabled
+        binding.buttonOff.isEnabled = settings.enabled
+        binding.textPowerStatus.text = when {
+            !settings.enabled -> getString(R.string.boost_is_off)
+            applying -> getString(R.string.boost_is_on)
+            else -> getString(R.string.boost_waiting_car)
+        }
+    }
+
+    private fun refreshStatus() {
+        val output = OutputMonitor.current(this)
+        val settings = prefs.load()
+        val applying = BoostLogic.shouldApplyEffects(
+            settings.enabled,
+            settings.autoCarMode,
+            output.carLikely || output.kind == OutputKind.USB
+        )
+        binding.textOutput.text = getString(R.string.output_label, output.label)
+        binding.textHint.text = when {
+            !settings.enabled -> getString(R.string.hint_off)
+            !applying -> getString(R.string.hint_waiting_car)
+            output.kind == OutputKind.USB -> getString(R.string.hint_usb)
+            output.kind == OutputKind.BLUETOOTH -> getString(R.string.hint_bluetooth)
+            else -> getString(R.string.hint_phone_boosting)
+        }
     }
 
     private fun currentSettings(): BoostSettings {

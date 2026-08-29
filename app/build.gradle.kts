@@ -11,8 +11,8 @@ android {
         applicationId = "com.usbboost.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 8
-        versionName = "1.2.1"
+        versionCode = 9
+        versionName = "2.1.1"
     }
 
     buildTypes {

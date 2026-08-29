@@ -76,14 +76,14 @@ internal object DynamicsEffects {
 
     private fun applyPresence(dp: DynamicsProcessing, presenceDb: Float): Boolean {
         return runCatching {
-            dp.setPreEqBandAllChannelsTo(0, DynamicsProcessing.EqBand(true, true, 200f, 0f))
+            dp.setPreEqBandAllChannelsTo(0, DynamicsProcessing.EqBand(true, 200f, 0f))
             dp.setPreEqBandAllChannelsTo(
                 1,
-                DynamicsProcessing.EqBand(true, true, PRESENCE_HZ, presenceDb)
+                DynamicsProcessing.EqBand(true, PRESENCE_HZ, presenceDb)
             )
             dp.setPreEqBandAllChannelsTo(
                 2,
-                DynamicsProcessing.EqBand(true, true, AIR_HZ, presenceDb * 0.35f)
+                DynamicsProcessing.EqBand(true, AIR_HZ, presenceDb * 0.35f)
             )
             true
         }.onFailure {
@@ -110,7 +110,6 @@ internal object DynamicsEffects {
         postGainDb: Float
     ): DynamicsProcessing.MbcBand {
         return DynamicsProcessing.MbcBand(
-            true,
             true,
             cutoffHz,
             attackMs,

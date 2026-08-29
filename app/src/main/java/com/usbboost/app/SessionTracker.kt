@@ -156,7 +156,7 @@ class SessionTracker(
 
     companion object {
         private const val TAG = "SessionTracker"
-        private const val POLL_INTERVAL_MS = 1500L
+        private const val POLL_INTERVAL_MS = 1000L
         private val DUMP_COMMANDS = listOf(
             arrayOf("dumpsys", "media.audio_flinger"),
             arrayOf("dumpsys", "audio")

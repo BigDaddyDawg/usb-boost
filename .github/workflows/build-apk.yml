@@ -52,14 +52,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v2.1.1
-          name: USB Boost
+          name: USB Boost 2.3.0
           body: |
-            Always download **app-release.apk** from this page — it is replaced on every update, same link.
+            Always the same link — the APK is replaced on every update.
 
-            1. Uninstall an older USB Boost if it was crashing
-            2. Install app-release.apk
-            3. Open USB Boost, tap Turn on, play music
-            4. If volume does not jump, pause Spotify and press play, then drag Boost level
+            1. Install app-release.apk (or tap Check for update in the app after this version)
+            2. Turn on, lock onto Spotify, drag Boost level
+            3. Optional: Podcast / Rock / Country presets, car auto-on, Quick Settings tile
           files: app/build/outputs/apk/release/app-release.apk
           overwrite_files: true
           make_latest: true

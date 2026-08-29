@@ -36,7 +36,8 @@ class EffectChain(private val sessionId: Int) {
         val range = eq.bandLevelRange
         val min = range[0]
         val max = range[1]
-        val wantOn = settings.boostPercent > 0 || settings.bassPercent > 0
+        val shape = settings.resolvedEq()
+        val wantOn = BoostLogic.eqWantsOn(settings.boostPercent, shape)
 
         runCatching { eq.enabled = false }
         for (band in 0 until bands) {
@@ -44,7 +45,7 @@ class EffectChain(private val sessionId: Int) {
                 val center = eq.getCenterFreq(band.toShort()) / 1000f
                 eq.setBandLevel(
                     band.toShort(),
-                    BoostLogic.eqBandMillibels(center, settings.boostPercent, settings.bassPercent, min, max)
+                    BoostLogic.eqBandMillibels(center, settings.boostPercent, shape, min, max)
                 )
             }.onFailure { Log.w(TAG, "EQ band $band failed for session $sessionId", it) }
         }

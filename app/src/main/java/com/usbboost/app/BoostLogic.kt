@@ -21,22 +21,25 @@ object BoostLogic {
         return !autoCarMode || carActive
     }
 
-    fun bassStrength(percent: Int): Int {
-        return ((percent.coerceIn(0, 100) / 100f) * 1000f).toInt().coerceIn(0, 1000)
-    }
-
     fun isRealSession(id: Int): Boolean = id > 0
 
+    fun eqWantsOn(boostPercent: Int, eq: EqBands): Boolean =
+        boostPercent > 0 || !eq.isFlat()
+
     /**
-     * One equalizer, one gain: every band gets the boost. Bass only adds on the low bands.
-     * Values are millibels (100 mB = 1 dB), matching the slider — not a compressor.
+     * Preamp from the boost slider, plus the tone shape (preset or custom bands).
+     * Millibels: 100 mB = 1 dB.
      */
-    fun eqBandMillibels(centerHz: Float, boostPercent: Int, bassPercent: Int, min: Short, max: Short): Short {
-        var mb = millibels(boostPercent)
-        when {
-            centerHz < 120f -> mb += millibels(bassPercent)
-            centerHz < 350f -> mb += (millibels(bassPercent) * 0.45f).toInt()
-        }
+    fun eqBandMillibels(
+        centerHz: Float,
+        boostPercent: Int,
+        eq: EqBands,
+        min: Short,
+        max: Short
+    ): Short {
+        val mb = millibels(boostPercent) + EqShapes.dbFor(centerHz, eq) * 100
         return mb.coerceIn(min.toInt(), max.toInt()).toShort()
     }
+
+    fun bumpBoost(percent: Int, delta: Int): Int = (percent + delta).coerceIn(0, 100)
 }

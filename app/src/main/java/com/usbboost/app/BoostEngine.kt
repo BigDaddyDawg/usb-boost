@@ -17,6 +17,7 @@ object BoostEngine {
     @Synchronized
     fun start(context: Context) {
         val app = context.applicationContext
+        OutputWatcher.start(app)
         SessionRegistry.restore(app)
         running.set(true)
         val settings = BoostPrefs(app).load()

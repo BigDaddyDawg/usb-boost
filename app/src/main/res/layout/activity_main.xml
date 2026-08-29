@@ -57,6 +57,14 @@
                         android:layout_weight="1"
                         android:text="@string/turn_off" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonLockOn"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/lock_on" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -76,6 +84,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+                <TextView
+                    android:id="@+id/textProfile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="?attr/textAppearanceBodySmall" />
 
                 <TextView
                     android:id="@+id/textHint"
@@ -132,6 +147,128 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/sound_label"
+            android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipsPreset"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFlat"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/preset_flat" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPodcast"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/preset_podcast" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipRock"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/preset_rock" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCountry"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/preset_country" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCustom"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/preset_custom" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <TextView
+            android:id="@+id/textEqBass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/eq_bass" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/sliderEqBass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stepSize="1"
+            android:valueFrom="-12"
+            android:valueTo="12" />
+
+        <TextView
+            android:id="@+id/textEqLowMid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/eq_low_mid" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/sliderEqLowMid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stepSize="1"
+            android:valueFrom="-12"
+            android:valueTo="12" />
+
+        <TextView
+            android:id="@+id/textEqMid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/eq_mid" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/sliderEqMid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stepSize="1"
+            android:valueFrom="-12"
+            android:valueTo="12" />
+
+        <TextView
+            android:id="@+id/textEqPresence"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/eq_presence" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/sliderEqPresence"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stepSize="1"
+            android:valueFrom="-12"
+            android:valueTo="12" />
+
+        <TextView
+            android:id="@+id/textEqTreble"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/eq_treble" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/sliderEqTreble"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:stepSize="1"
+            android:valueFrom="-12"
+            android:valueTo="12" />
+
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/switchEnabled"
             android:layout_width="match_parent"
@@ -145,23 +282,25 @@
             android:layout_height="wrap_content"
             android:text="@string/auto_car_mode" />
 
-        <TextView
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchAutoUsb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/auto_on_usb" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonUpdate"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/bass_label" />
+            android:text="@string/check_update" />
 
         <TextView
-            android:id="@+id/textBassValue"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <com.google.android.material.slider.Slider
-            android:id="@+id/sliderBass"
+            android:id="@+id/textUpdate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:stepSize="1"
-            android:valueFrom="0"
-            android:valueTo="100" />
+            android:layout_marginTop="8dp"
+            android:textAppearance="?attr/textAppearanceBodySmall" />
     </LinearLayout>
 </ScrollView>

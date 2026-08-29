@@ -14,6 +14,7 @@ class UsbBoostApp : Application() {
         super.onCreate()
         SessionRegistry.restore(this)
         registerSessionReceiver()
+        OutputWatcher.start(this)
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, error ->
             runCatching {

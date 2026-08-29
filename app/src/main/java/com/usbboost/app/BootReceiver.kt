@@ -8,9 +8,12 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         val prefs = BoostPrefs(context).load()
+        val app = context.applicationContext
         if (prefs.enabled && prefs.startOnBoot) {
-            BoostEngine.start(context.applicationContext)
-            BoostService.startSafely(context.applicationContext)
+            BoostEngine.start(app)
+            BoostService.startSafely(app)
+        } else if (prefs.autoOnUsb) {
+            BoostService.startSafely(app)
         }
     }
 }

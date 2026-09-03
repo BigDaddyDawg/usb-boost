@@ -12,28 +12,28 @@ class AppUpdaterTest {
         val info = AppUpdater.parseManifest(
             """
             {
-              "versionCode": 17,
-              "versionName": "2.6.0",
+              "versionCode": 18,
+              "versionName": "2.6.1",
               "apkUrl": "https://github.com/BigDaddyDawg/usb-boost/releases/download/v2.1.1/app-release.apk"
             }
             """.trimIndent()
         )
-        assertEquals(17, info.versionCode)
-        assertEquals("2.6.0", info.versionName)
+        assertEquals(18, info.versionCode)
+        assertEquals("2.6.1", info.versionName)
         assertEquals(AppUpdater.TAGGED_APK_URL, info.apkUrl)
     }
 
     @Test
     fun checkTreatsEqualVersionAsUpToDateAndHigherAsAvailable() {
-        val info = UpdateInfo(17, "2.6.0", AppUpdater.TAGGED_APK_URL)
-        assertTrue(AppUpdater.decide(info, 16) is UpdateCheck.Available)
-        assertTrue(AppUpdater.decide(info, 17) is UpdateCheck.UpToDate)
+        val info = UpdateInfo(18, "2.6.1", AppUpdater.TAGGED_APK_URL)
+        assertTrue(AppUpdater.decide(info, 17) is UpdateCheck.Available)
         assertTrue(AppUpdater.decide(info, 18) is UpdateCheck.UpToDate)
+        assertTrue(AppUpdater.decide(info, 19) is UpdateCheck.UpToDate)
     }
 
     @Test
     fun downloadFallbacksAlwaysIncludeTheStableReleaseLink() {
-        val urls = AppUpdater.apkUrls(UpdateInfo(17, "2.6.0", "https://example.com/missing.apk"))
+        val urls = AppUpdater.apkUrls(UpdateInfo(18, "2.6.1", "https://example.com/missing.apk"))
         assertTrue(urls.contains(AppUpdater.TAGGED_APK_URL))
         assertTrue(urls.contains(AppUpdater.LATEST_APK_URL))
         assertEquals("https://example.com/missing.apk", urls.first())

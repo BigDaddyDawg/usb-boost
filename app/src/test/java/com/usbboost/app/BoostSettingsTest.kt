@@ -128,6 +128,18 @@ class BoostSettingsTest {
     }
 
     @Test
+    fun clarityPresetCutsMudAndLiftsAir() {
+        val clarity = EqShapes.forPreset(SoundPreset.CLARITY)
+        val podcast = EqShapes.forPreset(SoundPreset.PODCAST)
+        assertTrue(clarity.lowMid < 0)
+        assertTrue(clarity.mid > 0)
+        assertTrue(clarity.presence > 0)
+        assertTrue(clarity.treble > podcast.treble)
+        assertTrue(clarity.bass > podcast.bass)
+        assertTrue(BoostLogic.eqWantsOn(0, clarity))
+    }
+
+    @Test
     fun carProfileSwapKeepsHomeLevels() {
         val home = BoostSettings(boostPercent = 40, preset = SoundPreset.PODCAST, eq = EqShapes.forPreset(SoundPreset.PODCAST))
         val stored = home.writeBack(car = false).copy(boostPercent = 90, preset = SoundPreset.ROCK)

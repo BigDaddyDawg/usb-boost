@@ -25,6 +25,7 @@
     <string name="preset_podcast">Podcast</string>
     <string name="preset_rock">Rock</string>
     <string name="preset_country">Country</string>
+    <string name="preset_clarity">Clarity</string>
     <string name="preset_custom">Custom</string>
     <string name="eq_bass">Bass</string>
     <string name="eq_low_mid">Low mid</string>

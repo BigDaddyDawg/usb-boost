@@ -1,7 +1,7 @@
 package com.usbboost.app
 
 enum class SoundPreset {
-    FLAT, PODCAST, ROCK, COUNTRY, CUSTOM;
+    FLAT, PODCAST, ROCK, COUNTRY, CLARITY, CUSTOM;
 
     companion object {
         fun fromKey(key: String): SoundPreset =
@@ -39,6 +39,8 @@ object EqShapes {
         SoundPreset.PODCAST -> EqBands(bass = -4, lowMid = 2, mid = 6, presence = 4, treble = 1)
         SoundPreset.ROCK -> EqBands(bass = 5, lowMid = -1, mid = 1, presence = 5, treble = 4)
         SoundPreset.COUNTRY -> EqBands(bass = 3, lowMid = 1, mid = 3, presence = 4, treble = 2)
+        // Cut mud, lift vocals, add air so instruments stay defined too.
+        SoundPreset.CLARITY -> EqBands(bass = -1, lowMid = -3, mid = 4, presence = 6, treble = 5)
     }
 
     fun dbFor(centerHz: Float, eq: EqBands): Int = when {

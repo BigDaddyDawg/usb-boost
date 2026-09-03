@@ -169,6 +169,7 @@ class MainActivity : AppCompatActivity() {
             SoundPreset.PODCAST -> binding.chipPodcast.isChecked = true
             SoundPreset.ROCK -> binding.chipRock.isChecked = true
             SoundPreset.COUNTRY -> binding.chipCountry.isChecked = true
+            SoundPreset.CLARITY -> binding.chipClarity.isChecked = true
             SoundPreset.CUSTOM -> binding.chipCustom.isChecked = true
         }
         suppressEq = false
@@ -199,6 +200,7 @@ class MainActivity : AppCompatActivity() {
         R.id.chipPodcast -> SoundPreset.PODCAST
         R.id.chipRock -> SoundPreset.ROCK
         R.id.chipCountry -> SoundPreset.COUNTRY
+        R.id.chipClarity -> SoundPreset.CLARITY
         R.id.chipCustom -> SoundPreset.CUSTOM
         else -> SoundPreset.FLAT
     }

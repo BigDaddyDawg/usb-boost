@@ -187,6 +187,13 @@
                     android:text="@string/preset_country" />
 
                 <com.google.android.material.chip.Chip
+                    android:id="@+id/chipClarity"
+                    style="@style/Widget.UsbBoost.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/preset_clarity" />
+
+                <com.google.android.material.chip.Chip
                     android:id="@+id/chipCustom"
                     style="@style/Widget.UsbBoost.Chip"
                     android:layout_width="wrap_content"

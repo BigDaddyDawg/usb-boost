@@ -40,7 +40,7 @@ object AppUpdater {
         "https://github.com/BigDaddyDawg/usb-boost/releases/latest/download/app-release.apk"
     const val ACTION_INSTALL_RESULT = "com.usbboost.app.INSTALL_RESULT"
     const val USER_AGENT =
-        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 USBBoost/2.6.0"
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 USBBoost/2.6.1"
 
     fun parseManifest(body: String): UpdateInfo {
         return UpdateInfo(
